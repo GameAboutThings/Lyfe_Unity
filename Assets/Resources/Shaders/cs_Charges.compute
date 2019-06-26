@@ -1,0 +1,103 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+struct Node
+{
+	float3 position;
+	float3 distortion;
+	float cubePortion;
+	float radius;
+};
+
+StructuredBuffer<Node> nodes; //node positions in world space
+int numNodes;
+float4 EDITOR_GRID_DIMENSION; //xyz are dimension, w is scale
+float3 basePos; //position of the base node
+RWStructuredBuffer<float> charges;
+
+
+float3 GridPosToLocalPos(float3 _gridPos)
+{
+	_gridPos -= EDITOR_GRID_DIMENSION.xyz / 2.f;
+
+	_gridPos *= EDITOR_GRID_DIMENSION.w;
+
+	return _gridPos + basePos;
+}
+
+float CalculateCubeCharge(Node _node, float3 _voxelPos)
+{
+	float3 d;
+	float radius = _node.radius / 3;
+
+	d.x = pow(abs(_voxelPos.x - _node.position.x), 3);
+	d.y = pow(abs(_voxelPos.y - _node.position.y), 3);
+	d.z = pow(abs(_voxelPos.z - _node.position.z), 3);
+
+	float r_4 = (d.x / _node.distortion.x + d.y / _node.distortion.y + d.z / _node.distortion.z);
+
+	if (r_4 <= radius)
+	{
+		r_4 = r_4 * 0.5f / radius;
+		return 1.f - r_4 + pow(r_4, 2);
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+float CalculateSphereCharge(Node _node, float3 _voxelPos)
+{
+	float3 d;
+
+	d.x = pow(abs(_voxelPos.x - _node.position.x), 2);
+	d.y = pow(abs(_voxelPos.y - _node.position.y), 2);
+	d.z = pow(abs(_voxelPos.z - _node.position.z), 2);
+
+	float r_squared = (d.x / _node.distortion.x + d.y / _node.distortion.y + d.z / _node.distortion.z);
+
+	if (r_squared < _node.radius)
+	{
+		r_squared = r_squared * 0.5f / _node.radius;
+		return 1.f - r_squared + pow(r_squared, 2);
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+float CalculateCharge(Node _node, float3 _voxelPos)
+{
+	float r = (_node.cubePortion * CalculateCubeCharge(_node, _voxelPos)) + ((1.f - _node.cubePortion) * CalculateSphereCharge(_node, _voxelPos));
+
+	return r;
+}
+
+float3 To3d(float _index)
+{
+	float3 ret;
+
+	ret.x = _index % EDITOR_GRID_DIMENSION.x;
+	ret.y = (_index / EDITOR_GRID_DIMENSION.x) % EDITOR_GRID_DIMENSION.y;
+	ret.z = _index / (EDITOR_GRID_DIMENSION.x * EDITOR_GRID_DIMENSION.y);
+
+	return ret;
+}
+
+[numthreads(8,8,8)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	float3 voxel = id;
+
+	float3 voxelPos = GridPosToLocalPos(voxel);
+
+	for (int n = 0; n < numNodes; n++)
+	{
+		int index = id.z * (EDITOR_GRID_DIMENSION.x * EDITOR_GRID_DIMENSION.y)
+			+ id.y * EDITOR_GRID_DIMENSION.x + id.x;
+
+		charges[index] += CalculateCharge(nodes[n], voxelPos);
+	}
+}
