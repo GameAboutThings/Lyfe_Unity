@@ -1,875 +1,107 @@
 ﻿#pragma kernel CSMain
+#include "MarchTables.compute"
+#include "MarchingCubeBuffers.compute"
 
-//TODO remove questionmarks from structs if the value is used once and therefore needed
-
-struct Node
-{
-	bool used;
-
-	float3 position;
-	int vertexIndex;
+struct Triangle {
+	float3 vertexC;
+	float3 vertexB;
+	float3 vertexA;
 };
 
-struct ControlNode
-{
-	bool used;
+AppendStructuredBuffer<Triangle> triangles;
+RWStructuredBuffer<float> points;
 
-	float3 position;
+int numPointsPerX;
+int numPointsPerY;
+int numPointsPerZ;
+float scale;
+float isoLevel;
+float3 center;
 
-	bool active;
-};
-
-struct Cube
-{
-	ControlNode topLeftBack;
-	ControlNode topRightBack;
-	ControlNode bottomLeftBack;
-	ControlNode bottomRightBack;
-
-	ControlNode topLeftFront;
-	ControlNode topRightFront;
-	ControlNode bottomLeftFront;
-	ControlNode bottomRightFront;
-
-	Node centerTopBack;
-	Node centerRightBack;
-	Node centerBottomBack;
-	Node centerLeftBack;
-
-	Node centerTopLeft;
-	Node centerTopRight;
-	Node centerBottomLeft;
-	Node centerBottomRight;
-
-	Node centerTopFront;
-	Node centerRightFront;
-	Node centerBottomFront;
-	Node centerLeftFront;
-};
-
-//INPUT
-StructuredBuffer<float> charges;
-RWStructuredBuffer<Cube> cubes; //this array is empty when this shader is launched
-RWStructuredBuffer<ControlNode> controlNodes;
-RWStructuredBuffer<Node> edges;
-uint3 numCubes; //number of cubes in each dimension ?
-float4 EDITOR_GRID_DIMENSION; //xyz are dimension, w is scale
-float3 basePos; //position of the base node
-float threshold;
-float cubeSize;
-RWStructuredBuffer<uint> vertexIndexPointer; // 2 entries [0] is vertex; [1] is index
-
-//OUTPUT
-RWStructuredBuffer<float3> vertexBuffer;
-RWStructuredBuffer<int> indexBuffer;
-
-//returns the position of the lower,back,left corner of the cube
-float3 GridPosToLocalPos(float3 _gridPos)
-{
-	_gridPos -= EDITOR_GRID_DIMENSION.xyz / 2.f;
-
-	_gridPos *= EDITOR_GRID_DIMENSION.w;
-
-	return _gridPos + basePos;
+float3 gridPosToLocalPos(float3 _pos)
+{	
+	_pos -= (float3(numPointsPerX, numPointsPerY, numPointsPerZ) / 2.f);
+	_pos *= scale;
+	_pos += center;	
+	return _pos;
 }
 
-//takes the id of one vertex and corresponds it to a cube
-//takes an integer between 0 and 11 and corresponds it to an edge
-int GetEdgeIndex(uint3 _vid, uint _edge)
+//determine which corner has ther greater weight
+float3 interpolateVerts(float4 v1, float4 v2) 
 {
-	int xMAX = EDITOR_GRID_DIMENSION.x;
-	int yMAX = EDITOR_GRID_DIMENSION.y;
-	int zMAX = EDITOR_GRID_DIMENSION.z;
-
-	switch (_edge)
-	{
-	case 0:
-		return _vid.z * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1) + xMAX * yMAX)
-			+ _vid.y *(2 * xMAX - 1)
-			+ _vid.x;
-		break;
-	case 1:
-		return _vid.z * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1) + xMAX * yMAX)
-			+ _vid.y *(2 * xMAX - 1)
-			+ _vid.x; + xMAX - 1;
-		break;
-	case 2:
-		return (_vid.z + 1) * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1) + xMAX * yMAX)
-			+ _vid.y *(2 * xMAX - 1)
-			+ _vid.x + xMAX;
-		break;
-	case 3:
-		return _vid.z * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1) + xMAX * yMAX)
-			+ (_vid.y + 1) *(2 * xMAX - 1)
-			+ _vid.x;
-		break;
-	case 4:
-		return (_vid.z + 1) * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1))
-			+ _vid.z * (xMAX*yMAX)
-			+ xMAX * _vid.y
-			+ _vid.x;
-		break;
-	case 5:
-		return (_vid.z + 1) * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1))
-			+ _vid.z * (xMAX*yMAX)
-			+ xMAX * _vid.y
-			+ (_vid.x + 1);
-		break;
-	case 6:
-		return (_vid.z + 1) * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1))
-			+ _vid.z * (xMAX*yMAX)
-			+ xMAX * (_vid.y + 1)
-			+ _vid.x;
-		break;
-	case 7:
-		return (_vid.z + 1) * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1))
-			+ _vid.z * (xMAX*yMAX)
-			+ xMAX * (_vid.y + 1)
-			+ (_vid.x + 1);
-		break;
-	case 8:
-		return (_vid.z + 1) * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1) + xMAX * yMAX)
-			+ _vid.y *(2 * xMAX - 1)
-			+ _vid.x;
-		break;
-	case 9:
-		return (_vid.z + 1) * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1) + xMAX * yMAX)
-			+ _vid.y *(2 * xMAX - 1)
-			+ _vid.x + xMAX - 1;
-		break;
-	case 10:
-		return (_vid.z + 1) * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1) + xMAX * yMAX)
-			+ _vid.y *(2 * xMAX - 1)
-			+ _vid.x + xMAX;
-		break;
-	case 11:
-		return (_vid.z + 1) * ((xMAX - 1)*yMAX + xMAX * (yMAX - 1) + xMAX * yMAX)
-			+ (_vid.y + 1) *(2 * xMAX - 1)
-			+ _vid.x;
-		break;
-	}
+	float t = (isoLevel - v1.w) / (v2.w - v1.w);
+	return v1.xyz + t * (v2.xyz - v1.xyz);
 }
 
-//vid corresponds to the lower left back corner of the cube
-float3 GetEdgeNodeWorldPosition(uint3 _vid, uint _edge)
+int indexFromCoord(int x, int y, int z) 
 {
-	float3 cornerPos;
-	switch (_edge)
-	{
-	case 0:
-		cornerPos = GridPosToLocalPos(_vid);
-		cornerPos.x += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 1:
-		cornerPos = GridPosToLocalPos(_vid);
-		cornerPos.y += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 2:
-		cornerPos = GridPosToLocalPos(float3( _vid.x + 1, _vid.y, _vid.z ));
-		cornerPos.y += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 3:
-		cornerPos = GridPosToLocalPos(float3( _vid.x, _vid.y + 1, _vid.z ));
-		cornerPos.x += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 4:
-		cornerPos = GridPosToLocalPos(_vid);
-		cornerPos.z += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 5:
-		cornerPos = GridPosToLocalPos(float3( _vid.x + 1, _vid.y, _vid.z ));
-		cornerPos.z += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 6:
-		cornerPos = GridPosToLocalPos(float3( _vid.x, _vid.y + 1, _vid.z ));
-		cornerPos.z += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 7:
-		cornerPos = GridPosToLocalPos(float3( _vid.x + 1, _vid.y + 1, _vid.z ));
-		cornerPos.z += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 8:
-		cornerPos = GridPosToLocalPos(float3( _vid.x, _vid.y, _vid.z + 1));
-		cornerPos.x += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 9:
-		cornerPos = GridPosToLocalPos(float3( _vid.x, _vid.y, _vid.z + 1 ));
-		cornerPos.y += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 10:
-		cornerPos = GridPosToLocalPos(float3( _vid.x + 1, _vid.y, _vid.z + 1 ));
-		cornerPos.y += cubeSize / 2;
-		return cornerPos;
-		break;
-	case 11:
-		cornerPos = GridPosToLocalPos(float3( _vid.x, _vid.y + 1, _vid.z + 1 ));
-		cornerPos.x += cubeSize / 2;
-		return cornerPos;
-		break;
-	}
+	return z * (numPointsPerY * numPointsPerX) 
+			+ y * numPointsPerX 
+			+ x;
 }
 
-int IdToCubeIndex(uint3 _id)
+float4 ChargePos(float _charge, int x, int y, int z)
 {
-	int x = _id.x;
-	int y = _id.y;
-	int z = _id.z;
-	return z * (numCubes.x * numCubes.y)
-		+ y * numCubes.x
-		+ x;
+	float3 _gridPos = float3(x, y, z);
+	float3 pos = gridPosToLocalPos(_gridPos);
+
+	return float4(pos, _charge);
 }
 
-int IdToChargeIndex(uint3 _id)
+[numthreads(8, 8, 8)]
+void CSMain (int3 id : SV_DispatchThreadID)
 {
-	int x = _id.x;
-	int y = _id.y;
-	int z = _id.z;
-	return z * (EDITOR_GRID_DIMENSION.x * EDITOR_GRID_DIMENSION.y)
-		+ y * EDITOR_GRID_DIMENSION.x
-		+ x;
-}
+	// Stop one point before the end because voxel includes neighbouring points
+	if (id.x >= numPointsPerX - 1 || id.y >= numPointsPerY - 1 || id.z >= numPointsPerZ - 1) 
+	{
+		return;
+	}
 
-int GetCubeConfiguration(Cube _cube)
-{
-	//v0 : 2^0 //blb
-	//v1 : 2^1 //brb
-	//v2 : 2^2 //blf
-	//v3 : 2^3 //brf
-	//v4 : 2^4 //tlb
-	//...
+	// 8 corners of the current cube
+	float4 cubeCorners[8] = 
+	{
+		ChargePos(points[indexFromCoord(id.x, id.y, id.z)]				, id.x		, id.y		, id.z		),
+		ChargePos(points[indexFromCoord(id.x + 1, id.y, id.z)]			, id.x + 1	, id.y		, id.z		),
+		ChargePos(points[indexFromCoord(id.x + 1, id.y, id.z + 1)]		, id.x + 1	, id.y		, id.z + 1	),
+		ChargePos(points[indexFromCoord(id.x, id.y, id.z + 1)]			, id.x		, id.y		, id.z + 1	),
+		ChargePos(points[indexFromCoord(id.x, id.y + 1, id.z)]			, id.x		, id.y + 1	, id.z		),
+		ChargePos(points[indexFromCoord(id.x + 1, id.y + 1, id.z)]		, id.x + 1	, id.y + 1	, id.z		),
+		ChargePos(points[indexFromCoord(id.x + 1, id.y + 1, id.z + 1)]	, id.x + 1	, id.y + 1	, id.z + 1	),
+		ChargePos(points[indexFromCoord(id.x, id.y + 1, id.z + 1)]		, id.x		, id.y + 1	, id.z + 1	)
+	};	
 
-	int conf = 0;
+	// Calculate unique index for each cube configuration.
+	// There are 256 possible values
+	// A value of 0 means cube is entirely inside surface; 255 entirely outside.
+	// The value is used to look up the edge table, which indicates which edges of the cube are cut by the isosurface.
+	int cubeIndex = 0;
+	if (cubeCorners[0].w >= isoLevel) cubeIndex |= 1;
+	if (cubeCorners[1].w >= isoLevel) cubeIndex |= 2;
+	if (cubeCorners[2].w >= isoLevel) cubeIndex |= 4;
+	if (cubeCorners[3].w >= isoLevel) cubeIndex |= 8;
+	if (cubeCorners[4].w >= isoLevel) cubeIndex |= 16;
+	if (cubeCorners[5].w >= isoLevel) cubeIndex |= 32;
+	if (cubeCorners[6].w >= isoLevel) cubeIndex |= 64;
+	if (cubeCorners[7].w >= isoLevel) cubeIndex |= 128;
 
-	if (_cube.bottomLeftBack.active)
-		conf += 1;
-	if (_cube.bottomRightBack.active)
-		conf += 2;
-	if (_cube.bottomLeftFront.active)
-		conf += 4;
-	if (_cube.bottomRightFront.active)
-		conf += 8;
-	if (_cube.topLeftBack.active)
-		conf += 16;
-	if (_cube.topRightBack.active)
-		conf += 32;
-	if (_cube.topLeftFront.active)
-		conf += 64;
-	if (_cube.topRightFront.active)
-		conf += 128;
+	// Create triangles for current cube configuration
+	for (int i = 0; triangulation[cubeIndex][i] != -1; i += 3) 
+	{
+		// Get indices of corner points A and B for each of the three edges
+		// of the cube that need to be joined to form the triangle.
+		int a0 = cornerIndexAFromEdge[triangulation[cubeIndex][i]];
+		int b0 = cornerIndexBFromEdge[triangulation[cubeIndex][i]];
 
-	return conf;
-}
+		int a1 = cornerIndexAFromEdge[triangulation[cubeIndex][i + 1]];
+		int b1 = cornerIndexBFromEdge[triangulation[cubeIndex][i + 1]];
 
-//adds a triangle to the index buffer and if needed also the vertices to the vertex buffer
-void AddTriangle(uint3 _id, uint3 _edges)
-{
-	uint3 id = _id;
-	int iP = -1;
-	InterlockedExchange(vertexIndexPointer[1], vertexIndexPointer[1] + 3, iP);
+		int a2 = cornerIndexAFromEdge[triangulation[cubeIndex][i + 2]];
+		int b2 = cornerIndexBFromEdge[triangulation[cubeIndex][i + 2]];
 
-	if (!edges[GetEdgeIndex(id, _edges.x)].used)
-	{
-		//set the vertexIndex for the edge node and increment it by one
-		InterlockedExchange(vertexIndexPointer[0], vertexIndexPointer[0] + 1, edges[GetEdgeIndex(id, _edges.x)].vertexIndex);
-		float3 pos = GetEdgeNodeWorldPosition(id, _edges.x);
-		vertexBuffer[edges[GetEdgeIndex(id, _edges.x)].vertexIndex] = pos;
+		Triangle tri;
+		tri.vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
+		tri.vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
+		tri.vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
+		triangles.Append(tri);
 	}
-	indexBuffer[iP] = edges[GetEdgeIndex(id, _edges.x)].vertexIndex;
-
-	if (!edges[GetEdgeIndex(id, _edges.y)].used)
-	{
-		InterlockedExchange(vertexIndexPointer[0], vertexIndexPointer[0] + 1, edges[GetEdgeIndex(id, _edges.y)].vertexIndex);
-		float3 pos = GetEdgeNodeWorldPosition(id, _edges.y);
-		vertexBuffer[edges[GetEdgeIndex(id, _edges.y)].vertexIndex] = pos;
-	}
-	indexBuffer[iP + 1] = edges[GetEdgeIndex(id, _edges.y)].vertexIndex;
-
-	if (!edges[GetEdgeIndex(id, _edges.z)].used)
-	{
-		InterlockedExchange(vertexIndexPointer[0], vertexIndexPointer[0] + 1, edges[GetEdgeIndex(id, _edges.z)].vertexIndex);
-		float3 pos = GetEdgeNodeWorldPosition(id, _edges.z);
-		vertexBuffer[edges[GetEdgeIndex(id, _edges.z)].vertexIndex] = pos;
-	}
-	indexBuffer[iP + 2] = edges[GetEdgeIndex(id, _edges.z)].vertexIndex;
-}
-
-[numthreads(8,8,8)]
-void CSMain (uint3 id : SV_DispatchThreadID)
-{
-	//PROBABLY HAVE TO EXAMINE SYNCHRONIZING THE WHOLE PROCESS BEHIND THIS SHIT
-
-	//the id is for each cube not each charge
-	//the charges are the corners of these cubes
-
-	//the id ranges from 0 to charge.length - 1 in each dimension
-	//since this is also the dimension of the cube field
-
-	//id (0,0,0) is in the lower,back,left corner of the charge field
-	int index = IdToCubeIndex(id);
-	int chargeIndex = 0;
-
-	//go through all control nodes and set their positions and wether they are active
-	uint3 nid = 0;
-	//left lower back || 0 0 0
-	nid = id;
-	chargeIndex = IdToChargeIndex(nid);
-	if (!controlNodes[chargeIndex].used)
-	{
-		controlNodes[chargeIndex].active = charges[chargeIndex] >= threshold;
-		controlNodes[chargeIndex].position = GridPosToLocalPos(nid);
-
-		controlNodes[chargeIndex].used = true;
-	}
-	cubes[index].bottomLeftBack = controlNodes[chargeIndex];
-
-	//right lower back || 1 0 0
-	nid = id;
-	nid.x++;
-	chargeIndex = IdToChargeIndex(nid);
-	if (!controlNodes[chargeIndex].used)
-	{
-		controlNodes[chargeIndex].active = charges[chargeIndex] >= threshold;
-		controlNodes[chargeIndex].position = GridPosToLocalPos(nid);
-
-		controlNodes[chargeIndex].used = true;
-	}
-	cubes[index].bottomLeftBack = controlNodes[chargeIndex];
-
-	//left top back || 0 1 0
-	nid = id;
-	nid.y++;
-	chargeIndex = IdToChargeIndex(nid);
-	if (!controlNodes[chargeIndex].used)
-	{
-		controlNodes[chargeIndex].active = charges[chargeIndex] >= threshold;
-		controlNodes[chargeIndex].position = GridPosToLocalPos(nid);
-
-		controlNodes[chargeIndex].used = true;
-	}
-	cubes[index].bottomLeftBack = controlNodes[chargeIndex];
-
-	//right top back || 1 1 0
-	nid = id;
-	nid.y++;
-	nid.x++;
-	chargeIndex = IdToChargeIndex(nid);
-	if (!controlNodes[chargeIndex].used)
-	{
-		controlNodes[chargeIndex].active = charges[chargeIndex] >= threshold;
-		controlNodes[chargeIndex].position = GridPosToLocalPos(nid);
-
-		controlNodes[chargeIndex].used = true;
-	}
-	cubes[index].bottomLeftBack = controlNodes[chargeIndex];
-
-	//left bottom front || 0 0 1
-	nid = id;
-	nid.z++;
-	chargeIndex = IdToChargeIndex(nid);
-	if (!controlNodes[chargeIndex].used)
-	{
-		controlNodes[chargeIndex].active = charges[chargeIndex] >= threshold;
-		controlNodes[chargeIndex].position = GridPosToLocalPos(nid);
-
-		controlNodes[chargeIndex].used = true;
-	}
-	cubes[index].bottomLeftBack = controlNodes[chargeIndex];
-
-	//right bottom front || 1 0 1
-	nid = id;
-	nid.z++;
-	nid.x++;
-	chargeIndex = IdToChargeIndex(nid);
-	if (!controlNodes[chargeIndex].used)
-	{
-		controlNodes[chargeIndex].active = charges[chargeIndex] >= threshold;
-		controlNodes[chargeIndex].position = GridPosToLocalPos(nid);
-
-		controlNodes[chargeIndex].used = true;
-	}
-	cubes[index].bottomLeftBack = controlNodes[chargeIndex];
-
-	//left top front || 0 1 1
-	nid = id;
-	nid.z++;
-	nid.y++;
-	chargeIndex = IdToChargeIndex(nid);
-	if (!controlNodes[chargeIndex].used)
-	{
-		controlNodes[chargeIndex].active = charges[chargeIndex] >= threshold;
-		controlNodes[chargeIndex].position = GridPosToLocalPos(nid);
-
-		controlNodes[chargeIndex].used = true;
-	}
-	cubes[index].bottomLeftBack = controlNodes[chargeIndex];
-
-	//right top front || 1 1 1
-	nid = id;
-	nid.z++;
-	nid.y++;
-	nid.x++;
-	chargeIndex = IdToChargeIndex(nid);
-	if (!controlNodes[chargeIndex].used)
-	{
-		controlNodes[chargeIndex].active = charges[chargeIndex] >= threshold;
-		controlNodes[chargeIndex].position = GridPosToLocalPos(nid);
-
-		//int vP = 0;
-
-		//InterlockedExchange(vertexIndexPointer[0], vertexIndexPointer[0] + 1, vP);
-
-		//controlNodes[chargeIndex].vertexIndex = vP;
-		//vertexBuffer[vP] = controlNodes[chargeIndex].position;
-
-		controlNodes[chargeIndex].used = true;	
-	}
-	cubes[index].bottomLeftBack = controlNodes[chargeIndex];
-
-	//at this point the cubes have their control nodes set.
-	//cube size is the distance from one control node to the other
-	//the center nodes lie between them
-	//so 1/2 cube size away
-
-
-	//NEXT UP
-	//check which configuration
-	//set up the corresponding center nodes
-	//add shit to the indexBuffer
-	//interlockedExchange on indexbuffer with +3
-	//fucking 256 configurations for one cube...
-
-	int configuration = GetCubeConfiguration(cubes[index]);
-
-	//0 NODES ACTIVE
-	if (configuration == 0) {}
-	//1 NODE ACTIVE
-	else if (configuration == 1)
-	{
-		AddTriangle(id, uint3(4, 0, 1));
-	}
-	else if (configuration == 2)
-	{
-		AddTriangle(id, uint3(5, 2, 0));
-	}
-	else if (configuration == 4)
-	{
-		AddTriangle(id, uint3(6, 1, 3));
-	}
-	else if (configuration == 8)
-	{
-		AddTriangle(id, uint3(7, 3, 2));
-	}
-	else if (configuration == 16)
-	{
-		AddTriangle(id, uint3(9, 8, 4));
-	}
-	else if (configuration == 32)
-	{
-		AddTriangle(id, uint3(8, 10, 5));
-	}
-	else if (configuration == 64)
-	{
-		AddTriangle(id, uint3(11, 9, 6));
-	}
-	else if (configuration == 128)
-	{
-		AddTriangle(id, uint3(10, 11, 7));
-	}
-	//2 NODES ACTIVE
-	//parallel to edges lower
-	else if (configuration == 1 + 2)
-	{
-		AddTriangle(id, uint3(4, 2, 1));
-		AddTriangle(id, uint3(4, 5, 2));
-	}
-	else if (configuration == 2 + 8)
-	{
-		AddTriangle(id, uint3(5, 3, 0));
-		AddTriangle(id, uint3(5, 7, 3));
-	}
-	else if (configuration == 8 + 4)
-	{
-		AddTriangle(id, uint3(6, 1, 2));
-		AddTriangle(id, uint3(6, 2, 7));
-	}
-	else if (configuration == 4 + 1)
-	{
-		AddTriangle(id, uint3(4, 0, 3));
-		AddTriangle(id, uint3(4, 3, 6));
-	}
-	//parallel to edges upper
-	else if (configuration == 16 + 32)
-	{
-		AddTriangle(id, uint3(4, 10, 9));
-		AddTriangle(id, uint3(4, 5, 9));
-	}
-	else if (configuration == 32 + 128)
-	{
-		AddTriangle(id, uint3(8, 11, 7));
-		AddTriangle(id, uint3(8, 7, 5));
-	}
-	else if (configuration == 128 + 64)
-	{
-		AddTriangle(id, uint3(9, 4, 5));
-		AddTriangle(id, uint3(9, 5, 10));
-	}
-	//parallel to edges vertical
-	else if (configuration == 1 + 16)
-	{
-		AddTriangle(id, uint3(0, 1, 9));
-		AddTriangle(id, uint3(0, 9, 8));
-	}
-	else if (configuration == 2 + 32)
-	{
-		AddTriangle(id, uint3(2, 0, 8));
-		AddTriangle(id, uint3(2, 8, 10));
-	}
-	else if (configuration == 4 + 64)
-	{
-		AddTriangle(id, uint3(1, 3, 11));
-		AddTriangle(id, uint3(1, 11, 9));
-	}
-	else if (configuration == 8 + 128)
-	{
-		AddTriangle(id, uint3(3, 2, 10));
-		AddTriangle(id, uint3(3, 10, 11));
-	}
-	//one up and one counterclockwise
-	else if (configuration == 1 + 64)
-	{
-		AddTriangle(id, uint3(0, 1, 4));
-		AddTriangle(id, uint3(6, 11, 9));
-	}
-	else if (configuration == 2 + 16)
-	{
-		AddTriangle(id, uint3(0, 5, 2));
-		AddTriangle(id, uint3(4, 9, 8));
-	}
-	else if (configuration == 4 + 128)
-	{
-		AddTriangle(id, uint3(3, 6, 1));
-		AddTriangle(id, uint3(10, 11, 7));
-	}
-	else if (configuration == 8 + 32)
-	{
-		AddTriangle(id, uint3(2, 7, 3));
-		AddTriangle(id, uint3(8, 10, 5));
-	}
-	//one up and one clockwise
-	else if (configuration == 1 + 32)
-	{
-		AddTriangle(id, uint3(0, 1, 4));
-		AddTriangle(id, uint3(8, 10, 5));
-	}
-	else if (configuration == 2 + 128)
-	{
-		AddTriangle(id, uint3(0, 5, 2));
-		AddTriangle(id, uint3(10, 11, 7));
-	}
-	else if (configuration == 4 + 16)
-	{
-		AddTriangle(id, uint3(3, 6, 1));
-		AddTriangle(id, uint3(4, 9, 8));
-	}
-	else if (configuration == 8 + 64)
-	{
-		AddTriangle(id, uint3(2, 7, 3));
-		AddTriangle(id, uint3(6, 11, 9));
-	}
-	//on opposite corners
-	else if (configuration == 1 + 128)
-	{
-		AddTriangle(id, uint3(0, 1, 4));
-		AddTriangle(id, uint3(10, 11, 7));
-	}
-	else if (configuration == 2 + 64)
-	{
-		AddTriangle(id, uint3(0, 5, 2));
-		AddTriangle(id, uint3(6, 11, 9));
-	}
-	else if (configuration == 4 + 32)
-	{
-		AddTriangle(id, uint3(3, 6, 1));
-		AddTriangle(id, uint3(8, 10, 5));
-	}
-	else if (configuration == 8 + 16)
-	{
-		AddTriangle(id, uint3(2, 7, 3));
-		AddTriangle(id, uint3(4, 9, 8));
-	}
-	//on opposite corners on same plane (ignore these cases for now since they aren't on the sheet)
-
-	//3 NODES ACTIVE
-	//on same plane(xy) lower (facing up) (case 5 on cheat sheet)
-	else if (configuration == 1 + 2 + 8)
-	{
-		AddTriangle(id, uint3(7, 4, 5));
-		AddTriangle(id, uint3(7, 1, 4));
-		AddTriangle(id, uint3(7, 3, 1));
-	}
-	else if (configuration == 2 + 8 + 4)
-	{
-		AddTriangle(id, uint3(6, 5, 7));
-		AddTriangle(id, uint3(6, 0, 5));
-		AddTriangle(id, uint3(6, 1, 0));
-	}
-	else if (configuration == 8 + 4 + 1)
-	{
-		AddTriangle(id, uint3(4, 7, 6));
-		AddTriangle(id, uint3(4, 2, 7));
-		AddTriangle(id, uint3(4, 0, 2));
-	}
-	else if (configuration == 4 + 1 + 2)
-	{
-		AddTriangle(id, uint3(5, 6, 4));
-		AddTriangle(id, uint3(5, 3, 6));
-		AddTriangle(id, uint3(5, 2, 3));
-	}
-	//on same plane(xy) upper (facing down)
-	else if (configuration == 16 + 32 + 128)
-	{
-		AddTriangle(id, uint3(7, 5, 4));
-		AddTriangle(id, uint3(7, 4, 9));
-		AddTriangle(id, uint3(7, 9, 11));
-	}
-	else if (configuration == 32 + 128 + 64)
-	{
-		AddTriangle(id, uint3(6, 7, 5));
-		AddTriangle(id, uint3(6, 5, 8));
-		AddTriangle(id, uint3(6, 8, 9));
-	}
-	else if (configuration == 128 + 64 + 16)
-	{
-		AddTriangle(id, uint3(4, 6, 7));
-		AddTriangle(id, uint3(4, 7, 10));
-		AddTriangle(id, uint3(4, 10, 8));
-	}
-	else if (configuration == 64 + 16 + 32)
-	{
-		AddTriangle(id, uint3(5, 4, 6));
-		AddTriangle(id, uint3(5, 6, 11));
-		AddTriangle(id, uint3(5, 11, 10));
-	}
-	//4 NODES ACTIVE
-
-	//5 NODES ACTIVE
-	//on same plane(xy) lower (facing down)
-	else if (configuration == 1 + 2 + 8)
-	{
-		AddTriangle(id, uint3(7, 5, 4));
-		AddTriangle(id, uint3(7, 4, 1));
-		AddTriangle(id, uint3(7, 1, 3));
-	}
-	else if (configuration == 2 + 8 + 4)
-	{
-		AddTriangle(id, uint3(6, 7, 5));
-		AddTriangle(id, uint3(6, 5, 0));
-		AddTriangle(id, uint3(6, 0, 1));
-	}
-	else if (configuration == 8 + 4 + 1)
-	{
-		AddTriangle(id, uint3(4, 6, 7));
-		AddTriangle(id, uint3(4, 7, 2));
-		AddTriangle(id, uint3(4, 2, 0));
-	}
-	else if (configuration == 4 + 1 + 2)
-	{
-		AddTriangle(id, uint3(5, 4, 6));
-		AddTriangle(id, uint3(5, 6, 3));
-		AddTriangle(id, uint3(5, 3, 2));
-	}
-	//on same plane(xy) upper (facing up)
-	else if (configuration == 16 + 32 + 128)
-	{
-		AddTriangle(id, uint3(7, 4, 5));
-		AddTriangle(id, uint3(7, 9, 4));
-		AddTriangle(id, uint3(7, 11, 9));
-	}
-	else if (configuration == 32 + 128 + 64)
-	{
-		AddTriangle(id, uint3(6, 5, 7));
-		AddTriangle(id, uint3(6, 8, 5));
-		AddTriangle(id, uint3(6, 9, 8));
-	}
-	else if (configuration == 128 + 64 + 16)
-	{
-		AddTriangle(id, uint3(4, 7, 6));
-		AddTriangle(id, uint3(4, 10, 7));
-		AddTriangle(id, uint3(4, 8, 10));
-	}
-	else if (configuration == 64 + 16 + 32)
-	{
-		AddTriangle(id, uint3(5, 6, 4));
-		AddTriangle(id, uint3(5, 11, 6));
-		AddTriangle(id, uint3(5, 10, 11));
-	}
-	//6 NODES ACTIVE
-	//parallel to edges lower
-	else if (configuration == 1 + 2)
-	{
-		AddTriangle(id, uint3(4, 1, 2));
-		AddTriangle(id, uint3(4, 2, 5));
-	}
-	else if (configuration == 2 + 8)
-	{
-		AddTriangle(id, uint3(5, 0, 3));
-		AddTriangle(id, uint3(5, 2, 7));
-	}
-	else if (configuration == 8 + 4)
-	{
-		AddTriangle(id, uint3(6, 2, 1));
-		AddTriangle(id, uint3(6, 7, 2));
-	}
-	else if (configuration == 4 + 1)
-	{
-		AddTriangle(id, uint3(4, 3, 0));
-		AddTriangle(id, uint3(4, 6, 3));
-	}
-	//parallel to edges upper
-	else if (configuration == 16 + 32)
-	{
-		AddTriangle(id, uint3(4, 9, 10));
-		AddTriangle(id, uint3(4, 9, 5));
-	}
-	else if (configuration == 32 + 128)
-	{
-		AddTriangle(id, uint3(8, 7, 11));
-		AddTriangle(id, uint3(8, 5, 7));
-	}
-	else if (configuration == 128 + 64)
-	{
-		AddTriangle(id, uint3(9, 5, 4));
-		AddTriangle(id, uint3(9, 10, 5));
-	}
-	//parallel to edges vertical
-	else if (configuration == 1 + 16)
-	{
-		AddTriangle(id, uint3(0, 9, 1));
-		AddTriangle(id, uint3(0, 8, 9));
-	}
-	else if (configuration == 2 + 32)
-	{
-		AddTriangle(id, uint3(2, 8, 0));
-		AddTriangle(id, uint3(2, 10, 8));
-	}
-	else if (configuration == 4 + 64)
-	{
-		AddTriangle(id, uint3(1, 11, 3));
-		AddTriangle(id, uint3(1, 9, 11));
-	}
-	else if (configuration == 8 + 128)
-	{
-		AddTriangle(id, uint3(3, 10, 2));
-		AddTriangle(id, uint3(3, 11, 10));
-	}
-	//one up and one counterclockwise
-	else if (configuration == 1 + 64)
-	{
-		AddTriangle(id, uint3(0, 4, 1));
-		AddTriangle(id, uint3(6, 9, 11));
-	}
-	else if (configuration == 2 + 16)
-	{
-		AddTriangle(id, uint3(0, 2, 5));
-		AddTriangle(id, uint3(4, 8, 9));
-	}
-	else if (configuration == 4 + 128)
-	{
-		AddTriangle(id, uint3(3, 1, 6));
-		AddTriangle(id, uint3(10, 7, 11));
-	}
-	else if (configuration == 8 + 32)
-	{
-		AddTriangle(id, uint3(2, 3, 7));
-		AddTriangle(id, uint3(8, 5, 11));
-	}
-	//one up and one clockwise
-	else if (configuration == 1 + 32)
-	{
-		AddTriangle(id, uint3(0, 4, 1));
-		AddTriangle(id, uint3(8, 5, 10));
-	}
-	else if (configuration == 2 + 128)
-	{
-		AddTriangle(id, uint3(0, 2, 5));
-		AddTriangle(id, uint3(10, 7, 11));
-	}
-	else if (configuration == 4 + 16)
-	{
-		AddTriangle(id, uint3(3, 1, 6));
-		AddTriangle(id, uint3(4, 8, 9));
-	}
-	else if (configuration == 8 + 64)
-	{
-		AddTriangle(id, uint3(2, 3, 7));
-		AddTriangle(id, uint3(6, 9, 11));
-	}
-	//on opposite corners
-	else if (configuration == 1 + 128)
-	{
-		AddTriangle(id, uint3(0, 4, 1));
-		AddTriangle(id, uint3(10, 7, 11));
-	}
-	else if (configuration == 2 + 64)
-	{
-		AddTriangle(id, uint3(0, 2, 5));
-		AddTriangle(id, uint3(6, 9, 11));
-	}
-	else if (configuration == 4 + 32)
-	{
-		AddTriangle(id, uint3(3, 1, 6));
-		AddTriangle(id, uint3(8, 5, 10));
-	}
-	else if (configuration == 8 + 16)
-	{
-		AddTriangle(id, uint3(2, 3, 7));
-		AddTriangle(id, uint3(4, 8, 9));
-	}
-	//on opposite corners on same plane (ignore these cases for now since they aren't on the sheet)
-
-	//7 NODES ACTIVE
-	else if (configuration == 255 - 1)
-	{
-		AddTriangle(id, uint3(4, 1, 0));
-	}
-	else if (configuration == 255 - 2)
-	{
-		AddTriangle(id, uint3(5, 0, 2));
-	}
-	else if (configuration == 255 - 4)
-	{
-		AddTriangle(id, uint3(6, 3, 1));
-	}
-	else if (configuration == 255 - 8)
-	{
-		AddTriangle(id, uint3(7, 2, 3));
-	}
-	else if (configuration == 255 - 16)
-	{
-		AddTriangle(id, uint3(9, 4, 8));
-	}
-	else if (configuration == 255 - 32)
-	{
-		AddTriangle(id, uint3(8, 5, 10));
-	}
-	else if (configuration == 255 - 64)
-	{
-		AddTriangle(id, uint3(11, 6, 9));
-	}
-	else if (configuration == 255 - 128)
-	{
-		AddTriangle(id, uint3(10, 7, 11));
-	}
-	//8 NODES ACTIVE
-	else if (configuration == 255) {}
 }

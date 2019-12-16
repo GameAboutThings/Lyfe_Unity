@@ -106,4 +106,19 @@ public class StaticMaths
     {
         return _sphereCenter + ((_point - _sphereCenter).normalized * _radius);
     }
+
+    /*
+     * Finds the angle between two vectors in 3d space
+     */
+    public static Quaternion FindQuaternion(Vector3 _vectorA, Vector3 _vectorB)
+    {
+        Quaternion q;
+        Vector3 a = Vector3.Cross(_vectorA, _vectorB);
+        q.x = a.x;
+        q.y = a.y;
+        q.z = a.z;
+        q.w = Mathf.Sqrt(Mathf.Pow(_vectorA.magnitude, 2) *  Mathf.Pow(_vectorB.magnitude, 2)) + Vector3.Dot(_vectorA, _vectorB);
+
+        return q;
+    }
 }

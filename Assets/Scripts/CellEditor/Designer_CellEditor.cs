@@ -6,6 +6,7 @@ public class Designer_CellEditor : MonoBehaviour
 {
     private static List<Node_CellEditor> selectedNodes;
     private static bool editorInputEnabled = true;
+    private static bool hasSymmetryNode = false;
 
 
     // Start is called before the first frame update
@@ -48,5 +49,10 @@ public class Designer_CellEditor : MonoBehaviour
     public static bool GetEditorInputEnabled()
     {
         return editorInputEnabled;
+    }
+
+    public static bool HasSymmetryNode()
+    {
+        return hasSymmetryNode;
     }
 }

@@ -24,6 +24,7 @@ namespace Meta_CellEditor
 			public static float SIZE_MAX = 150f;
 			public static float DISTANCE_MIN = 0.5f;
 			public static float DISTANCE_MAX = 3f;
+            public static float SCALING_FACTOR = 0.5f;
             public static float DISTANCE_AVERAGE
             {
                 get { return (DISTANCE_MAX + DISTANCE_MIN) / 2f; }
@@ -50,6 +51,8 @@ namespace Meta_CellEditor
 				ESplit,
 				ESingle,
                 EEnd
+
+                
 			}
 			
 			public enum ENodePosition : uint
@@ -115,19 +118,18 @@ namespace Meta_CellEditor
 			public class DIMENSION
 			{
 				public static int X = 200;
-				public static int Y = 40;
+				public static int Y = 80;
 				public static int Z = 200;
+                //(x * y * z) % 16 has to be 0
 			}
-			public static float SCALE = 0.1f;
-		}
-
-		public class METABALLS
-		{
-			public static float THRESHOLD = 0.8f;
+			public static float SCALE = 0.1f; //increasing this makes it blockier
+            //making it less blocky also crams the points closer together => grid becomes smaller
 		}
 
         public class MARCHING_CUBES
         {
+            public static float ISOLEVEL = 0.1f;
+
             public struct SEDGE
             {
                 bool used;
@@ -195,6 +197,35 @@ namespace Meta_CellEditor
                     return SNODE_SIZE * 8 +
                         SEDGE_SIZE * 12;
                 }
+            }
+        }
+
+        public class MISC
+        {
+            public enum ESymmetry : uint
+            {
+                /*
+                 * Symmytry always counts for the point where arms split
+                 * 
+                 * m : relevant node
+                 * n : effected node
+                 * x : point of symmetry
+                 * 
+                 *         m
+                 *         o
+                 *       o x o o
+                 *         o
+                 *         n
+                 *----------------------
+                 *         o
+                 *         o     m
+                 *       o o o o x
+                 *         o     n
+                 */
+                EOff, //no symmetry
+                EMirror, //mirror symmetry (left/right) (up/down)
+                EPointMirror, //point symmetry for the two opposing arms
+                EPoint //point symmetry for all 4 arms
             }
         }
 	}

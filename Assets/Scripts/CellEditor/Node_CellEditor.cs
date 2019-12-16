@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using static Meta_CellEditor.SCULPTING.NODES;
+using static Meta_CellEditor.SCULPTING.MISC;
 
 public class Node_CellEditor : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class Node_CellEditor : MonoBehaviour
     private Vector3 distortion = new Vector3(1, 1, 1);
     private float radius = 2; //radius of the node
     private float cubePortion = 0f; //value between 0 and 1
+    private bool symmetryNode = false;
 
 
 
@@ -105,6 +107,8 @@ public class Node_CellEditor : MonoBehaviour
         {
             Select();
         }
+
+        Scale();
     }
 
     /** Returns the mesh component */
@@ -155,13 +159,14 @@ public class Node_CellEditor : MonoBehaviour
                 Vector3 parPos = parentNode.transform.position;
                 Vector3 dir = (pos - parPos).normalized;
                 childPos = dir * DISTANCE_AVERAGE;
-                float rot = StaticMaths.FindLookAtAngle2D(parPos, pos); //maybe pos and childPos or parPos and childPos
+                float rot = StaticMaths.FindLookAtAngle2D(pos, parPos); //maybe pos and childPos or parPos and childPos
                 childRot = Quaternion.Euler(0f, rot, 0f);
+                //childRot = gameObject.transform.rotation;
 
                 if ((ePositionToParent == ENodePosition.ERight && _ePosition == ENodePosition.EAbove) ||
                     (ePositionToParent == ENodePosition.ELeft && _ePosition == ENodePosition.EBelow))
                 {
-                    childPos = new Vector3(childPos.z, childPos.y, childPos.x);
+                    childPos = new Vector3(-childPos.z, childPos.y, childPos.x);
                 }
                 else if ((ePositionToParent == ENodePosition.EAbove && _ePosition == ENodePosition.ELeft) ||
                     (ePositionToParent == ENodePosition.EBelow && _ePosition == ENodePosition.ERight))
@@ -176,7 +181,7 @@ public class Node_CellEditor : MonoBehaviour
                 else if ((ePositionToParent == ENodePosition.EAbove && _ePosition == ENodePosition.ERight) ||
                     (ePositionToParent == ENodePosition.EBelow && _ePosition == ENodePosition.ELeft))
                 {
-                    childPos = new Vector3(childPos.z, childPos.y, childPos.x);
+                    childPos = new Vector3(childPos.z, childPos.y, -childPos.x);
                 }
             }
             else
@@ -331,6 +336,57 @@ public class Node_CellEditor : MonoBehaviour
             sphereMaterial.color = COLOR_BASE;
         Designer_CellEditor.RemoveSelectedNode(this);
         //GetComponent<Rigidbody>().drag = 1f;
+    }
+
+    private void Scale()
+    {
+        if (!isMouseOver)
+            return;
+
+        if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+        {
+            Morph();
+            return;
+        }
+
+        float scroll = Input.mouseScrollDelta.y;
+
+        if (scroll == 0)
+            return;
+
+        bool increase = scroll > 0;
+
+        if (increase)
+        {
+            if (radius < 10f)
+                radius += SCALING_FACTOR;
+        }
+        else
+        {
+            if (radius > 3f)
+                radius -= SCALING_FACTOR;
+        }
+    }
+
+    private void Morph()
+    {
+        float scroll = Input.mouseScrollDelta.y;
+
+        if (scroll == 0)
+            return;
+
+        bool increase = scroll > 0;
+
+        if (increase)
+        {
+            if (cubePortion < 1f)
+                cubePortion += SCALING_FACTOR / 3f;
+        }
+        else
+        {
+            if (cubePortion > 0f)
+                cubePortion -= SCALING_FACTOR / 3f;
+        }
     }
 
     private void InstantiateArrows()
@@ -590,6 +646,23 @@ public class Node_CellEditor : MonoBehaviour
             parentNode.UpdateNodeType();
     }
 
+    private Node_CellEditor GetChild(ENodePosition _ePosition)
+    {
+        switch (_ePosition)
+        {
+            case ENodePosition.EAbove:
+                return childAbove;
+            case ENodePosition.ELeft:
+                return childLeft;
+            case ENodePosition.EBelow:
+                return childBelow;
+            case ENodePosition.ERight:
+                return childRight;
+            default:
+                return null;
+        }
+    }
+
     /*
      * Returns all nodes from this one down.
      * 
@@ -611,6 +684,25 @@ public class Node_CellEditor : MonoBehaviour
             _nodesList = childRight.GetAllChildNodes(_nodesList);
 
         return _nodesList;
+    }
+
+    /*
+     * Returns the number of direct children to this node. (Number between 0 and 3; 4 for  base nodes)
+     */
+    public int GetChildCount()
+    {
+        int ret = 0;
+
+        if (childAbove != null)
+            ret++;
+        if (childBelow != null)
+            ret++;
+        if (childLeft != null)
+            ret++;
+        if (childRight != null)
+            ret++;
+
+        return ret;
     }
 
     /*
@@ -646,5 +738,68 @@ public class Node_CellEditor : MonoBehaviour
         x.cubePortion = cubePortion;
 
         return x;
+    }
+
+    private List<Node_CellEditor> GetSymmetryNodes(ESymmetry _eSymmetry)
+    {
+        List<Node_CellEditor> ret = new List<Node_CellEditor>();
+        Stack<ENodePosition> positions = new Stack<ENodePosition>();
+
+        positions.Push(ePositionToParent);
+        Node_CellEditor center = parentNode;
+        int children = center.GetChildCount();
+
+        //find the center of symmetry
+        if (Designer_CellEditor.HasSymmetryNode())
+        {
+            while (center.eType != ENodeType.EBase && !center.symmetryNode)
+            {
+                positions.Push(center.ePositionToParent);
+                center = center.parentNode;
+                children = center.GetChildCount();
+            }
+
+            //if the base is reached withou finding the symmetry node, stop
+            if (!center.symmetryNode)
+                return ret;
+        }
+        else
+        {
+            while (center.eType != ENodeType.EBase)
+            {
+                positions.Push(center.ePositionToParent);
+                center = center.parentNode;
+                children = center.GetChildCount();
+            }
+        }
+        //if the symmetry node has only one child, stop
+        if (children == 1)
+            return ret;
+
+
+        //now we have the center of symmetry
+        //iterater over all the steps it took to get here, but backwards
+
+        if (_eSymmetry == ESymmetry.EMirror || _eSymmetry == ESymmetry.EPointMirror)
+        {
+            ENodePosition curPos;
+            curPos = positions.Pop();
+            while (positions.Count != 0 && center != null)
+            {
+                curPos = UTIL_CellEditor.GetOppositePosition(curPos);
+                center = center.GetChild(curPos);
+            }
+
+            if(center != null)
+                ret.Add(center);
+        }
+        else if (_eSymmetry == ESymmetry.EPoint)
+        {
+            //FUCK!
+        }
+
+        
+
+        return ret;
     }
 }

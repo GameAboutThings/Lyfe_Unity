@@ -27,8 +27,9 @@ float3 GridPosToLocalPos(float3 _gridPos)
 
 float CalculateCubeCharge(Node _node, float3 _voxelPos)
 {
+	//TODO include cube rotation
 	float3 d;
-	float radius = _node.radius / 3;
+	float radius = _node.radius * 1.7f;
 
 	d.x = pow(abs(_voxelPos.x - _node.position.x), 3);
 	d.y = pow(abs(_voxelPos.y - _node.position.y), 3);
@@ -39,7 +40,7 @@ float CalculateCubeCharge(Node _node, float3 _voxelPos)
 	if (r_4 <= radius)
 	{
 		r_4 = r_4 * 0.5f / radius;
-		return 1.f - r_4 + pow(r_4, 2);
+		return 0.25f - r_4 + pow(r_4, 2);
 	}
 	else
 	{
@@ -57,10 +58,10 @@ float CalculateSphereCharge(Node _node, float3 _voxelPos)
 
 	float r_squared = (d.x / _node.distortion.x + d.y / _node.distortion.y + d.z / _node.distortion.z);
 
-	if (r_squared < _node.radius)
+	if (r_squared <= _node.radius)
 	{
 		r_squared = r_squared * 0.5f / _node.radius;
-		return 1.f - r_squared + pow(r_squared, 2);
+		return 0.25f - r_squared + pow(r_squared, 2);
 	}
 	else
 	{
@@ -96,7 +97,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 	for (int n = 0; n < numNodes; n++)
 	{
 		int index = id.z * (EDITOR_GRID_DIMENSION.x * EDITOR_GRID_DIMENSION.y)
-			+ id.y * EDITOR_GRID_DIMENSION.x + id.x;
+			+ id.y * EDITOR_GRID_DIMENSION.x 
+			+ id.x;
 
 		charges[index] += CalculateCharge(nodes[n], voxelPos);
 	}
