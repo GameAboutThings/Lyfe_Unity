@@ -185,35 +185,11 @@ public class MapChunk : MonoBehaviour
 
         Color averageColor = new Color(
             //first component (RED)
-            d00 / sumDistances * c00.r +
-            d10 / sumDistances * c10.r +
-            d20 / sumDistances * c20.r +
-            d01 / sumDistances * c01.r +
-            d11 / sumDistances * c11.r +
-            d21 / sumDistances * c21.r +
-            d02 / sumDistances * c02.r +
-            d12 / sumDistances * c12.r +
-            d22 / sumDistances * c22.r,
+            CalculateWeightedValue(new float[] {c00.r, c10.r, c20.r, c01.r, c11.r, c21.r, c02.r, c12.r, c22.r}, new float[] {d00, d10, d20, d01, d11, d12, d20, d21, d22}),
             //second component (GREEN)
-            d00 / sumDistances * c00.g +
-            d10 / sumDistances * c10.g +
-            d20 / sumDistances * c20.g +
-            d01 / sumDistances * c01.g +
-            d11 / sumDistances * c11.g +
-            d21 / sumDistances * c21.g +
-            d02 / sumDistances * c02.g +
-            d12 / sumDistances * c12.g +
-            d22 / sumDistances * c22.g,
+            CalculateWeightedValue(new float[] {c00.g, c10.g, c20.g, c01.g, c11.g, c21.g, c02.g, c12.g, c22.g}, new float[] {d00, d10, d20, d01, d11, d12, d20, d21, d22}),
             //third component (BLUE)
-            d00 / sumDistances * c00.b +
-            d10 / sumDistances * c10.b +
-            d20 / sumDistances * c20.b +
-            d01 / sumDistances * c01.b +
-            d11 / sumDistances * c11.b +
-            d21 / sumDistances * c21.b +
-            d02 / sumDistances * c02.b +
-            d12 / sumDistances * c12.b +
-            d22 / sumDistances * c22.b
+            CalculateWeightedValue(new float[] {c00.b, c10.b, c20.b, c01.b, c11.b, c21.b, c02.b, c12.b, c22.b}, new float[] {d00, d10, d20, d01, d11, d12, d20, d21, d22})
             );
 
         return averageColor;
@@ -256,25 +232,27 @@ public class MapChunk : MonoBehaviour
 
         float sumDistances = d00 + d10 + d20 + d01 + d11 + d21 + d02 + d12 + d22;
 
-        //Debug.Log((s00 * (sumDistances / d00)) +
-        //        (s10 * (sumDistances / d10)) +
-        //        (s20 * (sumDistances / d20)) +
-        //        (s01 * (sumDistances / d01)) +
-        //        (s11 * (sumDistances / d11)) +
-        //        (s21 * (sumDistances / d21)) +
-        //        (s02 * (sumDistances / d02)) +
-        //        (s12 * (sumDistances / d12)) +
-        //        (s22 * (sumDistances / d22)) + " for " + sumDistances + "|" + d00 + " " + d10 + " " + d20 + " " + d01 );
+        return  CalculateWeightedValue(new float[] {s00, s10, s20, s01, s11, s12, s20, s21, s22}, new float[] {d00, d10, d20, d01, d11, d12, d20, d21, d22});
+    }
 
-        return  ((s00 * (sumDistances / d00)) +
-                (s10 * (sumDistances / d10)) +
-                (s20 * (sumDistances / d20)) +
-                (s01 * (sumDistances / d01)) +
-                (s11 * (sumDistances / d11)) +
-                (s21 * (sumDistances / d21)) +
-                (s02 * (sumDistances / d02)) +
-                (s12 * (sumDistances / d12)) +
-                (s22 * (sumDistances / d22))) / 90f;
+    private float CalculateWeightedValue(float[] _values, float[] _distances)
+    {
+        float sumDistances = 0;
+        for(int i = 0 ; i < _values.Length; i++)
+        {
+            sumDistances += _distances[i];
+        }
+
+        float value = 0;
+
+        for(int i = 0 ; i < _values.Length; i++)
+        {
+            value += (_values[i] * (sumDistances - _distances[i]) / sumDistances);
+        }
+
+        value /= _values.Length - 1;
+
+        return value;
     }
 
     public Vector3 GetHeightAt(float _x, float _z)
