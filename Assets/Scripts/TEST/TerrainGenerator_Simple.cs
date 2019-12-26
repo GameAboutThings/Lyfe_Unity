@@ -4,39 +4,49 @@ using UnityEngine;
 
 public class TerrainGenerator_Simple
 {
-    private int sizeX = 50;
-    private float sizeY = 5f; //deviance from absolute 0
-    private int sizeZ = 50;
-    private int smoothingRoutines = 10;
+    private float heightCap = 5f; //deviance from absolute 0
+    private float smoothness = 5;
     private float spacingX = 1f;
     private float spacingZ = 1f;
+    private float granularity = .2f;
 
-    public Vector3[,] GenerateHeightMap()
+    public TerrainGenerator_Simple(int _heightCap, float _smoothness, float _spacingX, float _spacingZ, float _granularity)
     {
-        Vector3[,] heightMap = new Vector3[sizeX + 1, sizeZ + 1];
+        heightCap = _heightCap;
+        smoothness = _smoothness;
+        spacingX = _spacingX;
+        spacingZ = _spacingZ;
+        granularity = _granularity;
+    }
 
-        for (int z = 0; z <= sizeZ; z++)
+    public TerrainGenerator_Simple()
+    {
+
+    }
+
+    public Vector3 GetHeightAt(float _x, float _z)
+    {
+        return GetHeightAt(_x, _z, smoothness);
+    }
+
+    public Vector3 GetHeightAt(float _x, float _z, float _smoothness)
+    {
+        float y = StaticMaths.Cap(Mathf.PerlinNoise(_x * granularity, _z * granularity) * 10f / _smoothness, -heightCap, heightCap);
+        return new Vector3(_x * spacingX, y, _z * spacingZ);
+    }
+
+    public Vector3[,] GenerateHeightMap(int _sizeX, int _sizeZ, Vector3 _center)
+    {
+        Vector3[,] heightMap = new Vector3[_sizeX + 1, _sizeZ + 1];
+
+        for (int z = 0; z <= _sizeZ; z++)
         {
-            for (int x = 0; x <= sizeX; x++)
+            for (int x = 0; x <= _sizeX; x++)
             {
-                float y = Mathf.PerlinNoise(x * .3f, z * .3f) * 4f;
-                Debug.Log(x + "/" + z + " = " + y);
-                heightMap[x, z] = new Vector3(x * spacingX, y, z * spacingZ);
+                heightMap[x, z] = GetHeightAt(x + _center.x, z + _center.z);
             }
         }
 
         return heightMap;
-    }
-
-    public Vector3[,] GenerateHeightMap(int _sizeX, int _sizeY, int _sizeZ, int _smoothingRoutines, float _spacingX, float _spacingZ)
-    {
-        sizeX = _sizeX;
-        sizeY = _sizeY;
-        sizeZ = _sizeZ;
-        smoothingRoutines = _smoothingRoutines;
-        spacingX = _spacingX;
-        spacingZ = _spacingZ;
-
-        return GenerateHeightMap();
     }
 }

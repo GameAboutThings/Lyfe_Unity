@@ -121,4 +121,43 @@ public class StaticMaths
 
         return q;
     }
+
+    /*
+     * Caps a values between two given values
+     */
+    public static float Cap(float _value, float _lowerCap, float _higherCap)
+    {
+        if (_lowerCap > _value)
+            return _lowerCap;
+
+        if (_higherCap < _value)
+            return _higherCap;
+
+        return _value;
+    }
+
+    public static bool WithinBoundingBox(Vector2 _point, Vector2 _boxCenter, Vector2 _boxDimensions)
+    {
+        Vector2 topLeft = new Vector2(
+            _boxCenter.x - _boxDimensions.x / 2f,
+            _boxCenter.y - _boxDimensions.y / 2f
+            );
+
+        Vector2 bottomRight = new Vector2(
+            _boxCenter.x + _boxDimensions.x / 2f,
+            _boxCenter.y + _boxDimensions.y / 2f
+            );
+
+        return (topLeft.x <= _point.x && _point.x <= bottomRight.x && topLeft.y <= _point.y && _point.y <= bottomRight.y);
+    }
+
+    public static Vector3 MultiplyVector3D(Vector3 _a, Vector3 _b)
+    {
+        return new Vector3(_a.x * _b.x, _a.y * _b.y, _a.z * _b.z);
+    }
+
+    public static Vector3 DivideVector3D(Vector3 _a, Vector3 _b)
+    {
+        return new Vector3(_a.x / _b.x, _a.y / _b.y, _a.z / _b.z);
+    }
 }
