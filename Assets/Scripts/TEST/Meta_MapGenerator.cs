@@ -19,7 +19,7 @@ namespace Meta_MapGenerator
 
     class CHUNK
     {
-        public static Vector3Int Size = new Vector3Int(50, 50, 50);
+        public static Vector3Int Size = new Vector3Int(20, 20, 20);
     }
 
     public class BIOME
@@ -40,11 +40,11 @@ namespace Meta_MapGenerator
                 //case EBiome.EBasic:
                 //    return new BIOME(5, Color.gray);
                 case EBiome.EGrassland:
-                    return new BIOME(10, Color.green);
+                    return new BIOME(8, Color.green);
                 case EBiome.EDesert:
                     return new BIOME(10, Color.yellow);
                 case EBiome.EMountains:
-                    return new BIOME(2, Color.red);
+                    return new BIOME(1, Color.red); //0.9
             }
 
             return new BIOME(5, Color.gray);
@@ -63,7 +63,7 @@ namespace Meta_MapGenerator
         public static EBiome GetRandomBiome()
         {
             System.Array values = System.Enum.GetValues(typeof(EBiome));
-            return (EBiome)Random.Range(0, values.Length);
+            return (EBiome)Random.Range(0, 3);
         }
     }
 }

@@ -168,12 +168,100 @@ public class HexTileMapGenerator : MonoBehaviour
         }
         else if (_oldChunkIndex.x == 0 && _oldChunkIndex.y == 1)
         {
-
+            MoveChunksRight();
         }
         else if (_oldChunkIndex.x == 2 && _oldChunkIndex.y == 1)
         {
-
+            MoveChunksLeft();
         }
+    }
+
+    private void MoveChunksRight()
+    {
+        Debug.Log("function to move chunks right is not implemented");
+    }
+
+    private void MoveChunksLeft()
+    {
+        //[(0,0) (1,0) (2,0)]
+        //[(0,1) (1,1) (2,1)]
+        //[(0,2) (1,2) (2,2)]
+
+        //clearing left row
+        chunks[0, 0].Clear();
+        chunks[0, 1].Clear();
+        chunks[0, 2].Clear();
+
+        //moving chunk references left one step in the array
+        chunks[0, 0] = chunks[1, 0];
+        chunks[1, 0] = chunks[2, 0];
+
+        chunks[0, 1] = chunks[1, 1];
+        chunks[1, 1] = chunks[2, 1];
+
+        chunks[0, 2] = chunks[1, 2];
+        chunks[1, 2] = chunks[2, 2];
+
+        chunks[2, 0] = chunks[1, 0].GetNeighbourChunk(UTIL.EPosition.ERight);
+        chunks[2, 1] = chunks[1, 1].GetNeighbourChunk(UTIL.EPosition.ERight);
+        chunks[2, 2] = chunks[1, 2].GetNeighbourChunk(UTIL.EPosition.ERight);
+
+        if (chunks[2, 0] != null && chunks[2, 1] == null)
+            chunks[2, 1] = chunks[2, 0].GetNeighbourChunk(UTIL.EPosition.EBelow);
+
+        if (chunks[2, 1] != null && chunks[2, 0] == null)
+            chunks[2, 0] = chunks[2, 1].GetNeighbourChunk(UTIL.EPosition.EAbove);
+
+        if (chunks[2, 1] != null && chunks[2, 2] == null)
+            chunks[2, 2] = chunks[2, 1].GetNeighbourChunk(UTIL.EPosition.EBelow);
+
+        if (chunks[2, 2] != null && chunks[2, 1] == null)
+            chunks[2, 1] = chunks[2, 2].GetNeighbourChunk(UTIL.EPosition.EAbove);
+
+        if (chunks[2, 0] == null)
+        {
+            chunks[2, 0] = gameObject.AddComponent<MapChunk>();
+            chunks[2, 0].InitChunk(BIOME.GetRandomBiome(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+
+            if (chunks[2, 1] != null)
+                chunks[2, 0].SetNeighbourChunk(chunks[2, 1], UTIL.EPosition.ELeft);
+            if (chunks[1, 0] != null)
+                chunks[2, 0].SetNeighbourChunk(chunks[1, 0], UTIL.EPosition.EBelow);
+
+            chunkStore.Add(chunks[0, 2]);
+        }
+
+        if (chunks[2, 1] == null)
+        {
+            chunks[2, 1] = gameObject.AddComponent<MapChunk>();
+            chunks[2, 1].InitChunk(BIOME.GetRandomBiome(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, 0), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+
+            if (chunks[2, 0] != null)
+                chunks[2, 1].SetNeighbourChunk(chunks[2, 0], UTIL.EPosition.EAbove);
+            if (chunks[2, 2] != null)
+                chunks[2, 1].SetNeighbourChunk(chunks[2, 2], UTIL.EPosition.EBelow);
+            if (chunks[1, 1] != null)
+                chunks[2, 1].SetNeighbourChunk(chunks[1, 1], UTIL.EPosition.ELeft);
+
+            chunkStore.Add(chunks[1, 2]);
+        }
+
+        if (chunks[2, 2] == null)
+        {
+            chunks[2, 2] = gameObject.AddComponent<MapChunk>();
+            chunks[2, 2].InitChunk(BIOME.GetRandomBiome(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+
+            if (chunks[1, 2] != null)
+                chunks[2, 2].SetNeighbourChunk(chunks[1, 2], UTIL.EPosition.ELeft);
+            if (chunks[2, 1] != null)
+                chunks[2, 2].SetNeighbourChunk(chunks[2, 1], UTIL.EPosition.EAbove);
+
+            chunkStore.Add(chunks[2, 2]);
+        }
+
+        chunks[2, 0].GenerateMap();
+        chunks[2, 1].GenerateMap();
+        chunks[2, 2].GenerateMap();
     }
 
     private void MoveChunksUp()
@@ -182,7 +270,7 @@ public class HexTileMapGenerator : MonoBehaviour
         //[(0,1) (1,1) (2,1)]
         //[(0,2) (1,2) (2,2)]
 
-        //clearing lower row
+        //clearing lower upper
         chunks[0, 0].Clear();
         chunks[1, 0].Clear();
         chunks[2, 0].Clear();

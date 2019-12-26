@@ -230,27 +230,50 @@ public class MapChunk : MonoBehaviour
         float d12 = StaticMaths.Distance2D(pos2D, cen12);
         float d22 = StaticMaths.Distance2D(pos2D, cen22);
 
-        float sumDistances = d00 + d10 + d20 + d01 + d11 + d21 + d02 + d12 + d22;
+        float smoothness = CalculateWeightedValue(new float[] { s00, s10, s20, s01, s11, s12, s20, s21, s22 }, new float[] { d00, d10, d20, d01, d11, d12, d20, d21, d22 });
 
-        return  CalculateWeightedValue(new float[] {s00, s10, s20, s01, s11, s12, s20, s21, s22}, new float[] {d00, d10, d20, d01, d11, d12, d20, d21, d22});
+        return  smoothness;
     }
 
     private float CalculateWeightedValue(float[] _values, float[] _distances)
     {
+        float summands = 0;
         float sumDistances = 0;
+        float diagonal = Mathf.Sqrt(Mathf.Pow(CHUNK.Size.x * TILES.Offset.x, 2) + Mathf.Pow(CHUNK.Size.y * TILES.Offset.y, 2));
+        float maxDistance = (3f / 2f) * diagonal;
+        int maxWeight = 15;
+
+
         for(int i = 0 ; i < _values.Length; i++)
         {
-            sumDistances += _distances[i];
+            for (int j = 1; j < maxWeight; j++)
+            {
+                if (_distances[i] <= (maxDistance / (float)j))
+                {
+                    sumDistances += _distances[i];
+                    summands++;
+                }
+                else
+                    j = maxWeight;
+            }
         }
 
         float value = 0;
 
         for(int i = 0 ; i < _values.Length; i++)
         {
-            value += (_values[i] * (sumDistances - _distances[i]) / sumDistances);
+            for (int j = 1; j < maxWeight; j++)
+            {
+                if (_distances[i] <= (maxDistance / (float)j))
+                {
+                    value += (_values[i] * (sumDistances - _distances[i]) / sumDistances);
+                }
+                else
+                    j = maxWeight;
+            }
         }
 
-        value /= _values.Length - 1;
+        value /= summands;
 
         return value;
     }

@@ -160,4 +160,12 @@ public class StaticMaths
     {
         return new Vector3(_a.x / _b.x, _a.y / _b.y, _a.z / _b.z);
     }
+
+    public static float Gaussian(float _x)
+    {
+
+        float y = (1 / Mathf.Sqrt(2 * Mathf.PI)) * Mathf.Exp(-(1/2) * Mathf.Pow(_x, 2));
+
+        return y;
+    }
 }
