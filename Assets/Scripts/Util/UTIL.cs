@@ -9,6 +9,7 @@ public class UTIL
         EAbove,
         EBelow,
         ERight,
-        ELeft
+        ELeft,
+        ECenter
     }
 }

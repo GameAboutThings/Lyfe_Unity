@@ -107,19 +107,25 @@ public class MapChunk : MonoBehaviour
             {
                 Vector3 pos = heightMap[x, z];
 
+                float y = pos.y;
+
+                if (float.IsNaN(y))
+                    y = 0;
+
                 //move hex to its spot
                 if (z % 2 == 0)
                 {
                     pos = new Vector3(pos.x * TILES.Offset.x - (0.5f * chunkSizeX),
-                                    pos.y, 
+                                    y, 
                                     pos.z * TILES.Offset.z - (0.5f * chunkSizeZ));
                 }
                 else
                 {
-                    pos = new Vector3(pos.x * TILES.Offset.x + (TILES.Offset.x / 2) - (0.5f * chunkSizeX), 
-                                    pos.y, 
+                    pos = new Vector3(pos.x * TILES.Offset.x + (TILES.Offset.x / 2f) - (0.5f * chunkSizeX), 
+                                    y, 
                                     pos.z * TILES.Offset.z - (0.5f * chunkSizeZ));
                 }
+
                 GameObject tile = Instantiate(hexTilePrefab, pos, Quaternion.identity);
                 tiles.Add(tile);
                 SetTileInfo(tile, x, z);
@@ -130,6 +136,7 @@ public class MapChunk : MonoBehaviour
     private void SetTileInfo(GameObject _tile, int _x, int _z)
     {
         _tile.GetComponentInChildren<MeshRenderer>().material.color = CalculateTileColor(_tile.transform.position);
+        _tile.transform.parent = transform;
     }
 
     public Vector3 GetCenter()
@@ -139,6 +146,9 @@ public class MapChunk : MonoBehaviour
 
     public void Clear()
     {
+        if (tiles == null)
+            return;
+
         while (tiles.Count != 0)
         {
             Destroy(tiles[0]);
@@ -161,35 +171,15 @@ public class MapChunk : MonoBehaviour
         Color c12 = chunks[1, 2].GetColor();
         Color c22 = chunks[2, 2].GetColor();
 
-        Vector2 cen00 = StaticMaths.ThreeDTo2D(chunks[0, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen10 = StaticMaths.ThreeDTo2D(chunks[1, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen20 = StaticMaths.ThreeDTo2D(chunks[2, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen01 = StaticMaths.ThreeDTo2D(chunks[0, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen11 = StaticMaths.ThreeDTo2D(chunks[1, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen21 = StaticMaths.ThreeDTo2D(chunks[2, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen02 = StaticMaths.ThreeDTo2D(chunks[0, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen12 = StaticMaths.ThreeDTo2D(chunks[1, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen22 = StaticMaths.ThreeDTo2D(chunks[2, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
-
-        float d00 = StaticMaths.Distance2D(pos2D, cen00);
-        float d10 = StaticMaths.Distance2D(pos2D, cen10);
-        float d20 = StaticMaths.Distance2D(pos2D, cen20);
-        float d01 = StaticMaths.Distance2D(pos2D, cen01);
-        float d11 = StaticMaths.Distance2D(pos2D, cen11);
-        float d21 = StaticMaths.Distance2D(pos2D, cen21);
-        float d02 = StaticMaths.Distance2D(pos2D, cen02);
-        float d12 = StaticMaths.Distance2D(pos2D, cen12);
-        float d22 = StaticMaths.Distance2D(pos2D, cen22);
-
-        float sumDistances = d00 + d10 + d20 + d01 + d11 + d21 + d02 + d12 + d22;
+        float[] distances = GetDistancesToChunkCenters(pos2D);
 
         Color averageColor = new Color(
             //first component (RED)
-            CalculateWeightedValue(new float[] {c00.r, c10.r, c20.r, c01.r, c11.r, c21.r, c02.r, c12.r, c22.r}, new float[] {d00, d10, d20, d01, d11, d12, d20, d21, d22}),
+            CalculateWeightedValue(new float[] {c00.r, c10.r, c20.r, c01.r, c11.r, c21.r, c02.r, c12.r, c22.r}, distances),
             //second component (GREEN)
-            CalculateWeightedValue(new float[] {c00.g, c10.g, c20.g, c01.g, c11.g, c21.g, c02.g, c12.g, c22.g}, new float[] {d00, d10, d20, d01, d11, d12, d20, d21, d22}),
+            CalculateWeightedValue(new float[] {c00.g, c10.g, c20.g, c01.g, c11.g, c21.g, c02.g, c12.g, c22.g}, distances),
             //third component (BLUE)
-            CalculateWeightedValue(new float[] {c00.b, c10.b, c20.b, c01.b, c11.b, c21.b, c02.b, c12.b, c22.b}, new float[] {d00, d10, d20, d01, d11, d12, d20, d21, d22})
+            CalculateWeightedValue(new float[] {c00.b, c10.b, c20.b, c01.b, c11.b, c21.b, c02.b, c12.b, c22.b}, distances)
             );
 
         return averageColor;
@@ -210,6 +200,37 @@ public class MapChunk : MonoBehaviour
         float s12 = chunks[1, 2].biomeData.GetSmoothness();
         float s22 = chunks[2, 2].biomeData.GetSmoothness();
 
+        float smoothness = CalculateWeightedValue(new float[] { s00, s10, s20, s01, s11, s12, s20, s21, s22 }, GetDistancesToChunkCenters(pos2D));
+
+        return  smoothness;
+    }
+
+    private float CalculateTileHeight(Vector3 _tilePosition)
+    {
+        Vector2 pos2D = StaticMaths.ThreeDTo2D(_tilePosition, StaticMaths.EPlane.E_XZ);
+
+        MapChunk[,] chunks = mapGenerator.GetChunks();
+        float h00 = chunks[0, 0].biomeData.GetHeight();
+        float h10 = chunks[1, 0].biomeData.GetHeight();
+        float h20 = chunks[2, 0].biomeData.GetHeight();
+        float h01 = chunks[0, 1].biomeData.GetHeight();
+        float h11 = chunks[1, 1].biomeData.GetHeight();
+        float h21 = chunks[2, 1].biomeData.GetHeight();
+        float h02 = chunks[0, 2].biomeData.GetHeight();
+        float h12 = chunks[1, 2].biomeData.GetHeight();
+        float h22 = chunks[2, 2].biomeData.GetHeight();  
+
+        float smoothness = CalculateWeightedValue(new float[] { h00, h10, h20, h01, h11, h12, h20, h21, h22 }, GetDistancesToChunkCenters(pos2D));
+
+        return smoothness;
+    }
+
+    private float[] GetDistancesToChunkCenters(Vector2 _tilePosition)
+    {
+        Vector2 pos2D = _tilePosition;
+
+        MapChunk[,] chunks = mapGenerator.GetChunks();
+
         Vector2 cen00 = StaticMaths.ThreeDTo2D(chunks[0, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
         Vector2 cen10 = StaticMaths.ThreeDTo2D(chunks[1, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
         Vector2 cen20 = StaticMaths.ThreeDTo2D(chunks[2, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
@@ -230,9 +251,7 @@ public class MapChunk : MonoBehaviour
         float d12 = StaticMaths.Distance2D(pos2D, cen12);
         float d22 = StaticMaths.Distance2D(pos2D, cen22);
 
-        float smoothness = CalculateWeightedValue(new float[] { s00, s10, s20, s01, s11, s12, s20, s21, s22 }, new float[] { d00, d10, d20, d01, d11, d12, d20, d21, d22 });
-
-        return  smoothness;
+        return new float[] { d00, d10, d20, d01, d11, d12, d20, d21, d22 };
     }
 
     private float CalculateWeightedValue(float[] _values, float[] _distances)
@@ -281,7 +300,11 @@ public class MapChunk : MonoBehaviour
     public Vector3 GetHeightAt(float _x, float _z)
     {
         Vector3 pos = new Vector3(_x * spacingX, 0, _z * spacingZ);
-        float y = StaticMaths.Cap(Mathf.PerlinNoise(_x * granularity, _z * granularity) * 10f / CalculateTileSmoothness(pos), -chunkSizeY, chunkSizeY);
+        float y = StaticMaths.Cap(
+            Mathf.PerlinNoise(_x * granularity, _z * granularity) * 10f / CalculateTileSmoothness(pos)
+                + CalculateTileHeight(pos), 
+            -chunkSizeY, 
+            chunkSizeY);
         return new Vector3(pos.x, y, pos.z);
     }
 

@@ -168,4 +168,10 @@ public class StaticMaths
 
         return y;
     }
+
+    public static float GetRandomFloat(float minimum, float maximum)
+    {
+        System.Random random = new System.Random();
+        return (float)random.NextDouble() * (maximum - minimum) + minimum;
+    }
 }
