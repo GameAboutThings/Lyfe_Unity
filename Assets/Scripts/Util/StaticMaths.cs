@@ -174,4 +174,22 @@ public class StaticMaths
         System.Random random = new System.Random();
         return (float)random.NextDouble() * (maximum - minimum) + minimum;
     }
+
+    /*
+     * Takes steps away from 0 to _value using _step as their size.
+     * Returns the maximum number of steps fitting in _value.
+     * 
+     * 5,2   => 2 steps => 4
+     * 5,3   => 1 step  => 3
+     * 6,3   => 2 steps => 6 
+     * 7,3   => 2 steps => 6
+     * 7,1   => 7 steps => 7
+     * 1,0.3 => 3 steps => 0.9
+     */
+    public static float Descretize(float _value, float _step)
+    {
+        int x = (int)(_value / _step);
+
+        return _step * x;
+    }
 }

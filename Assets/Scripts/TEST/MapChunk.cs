@@ -10,8 +10,8 @@ public class MapChunk : MonoBehaviour
     HexTileMapGenerator mapGenerator;
 
     Vector3[,] heightMap;
-    EBiome biome;
-    BIOME biomeData;
+    ETerrain terrain;
+    TERRAIN terrainData;
 
     List<GameObject> tiles;
 
@@ -32,10 +32,10 @@ public class MapChunk : MonoBehaviour
     MapChunk right;
     MapChunk left;
 
-    public void InitChunk(EBiome _biome, Vector3 _center, int _chunkSizeX, int _chunkSizeY, int _chunkSizeZ, GameObject _hexTilePrefab, HexTileMapGenerator _mapGenerator)
+    public void InitChunk(ETerrain _terrain, Vector3 _center, int _chunkSizeX, int _chunkSizeY, int _chunkSizeZ, GameObject _hexTilePrefab, HexTileMapGenerator _mapGenerator)
     {
-        biome = _biome;
-        biomeData = BIOME.GetBiomeData(biome);
+        terrain = _terrain;
+        terrainData = TERRAIN.GetTerrainData(terrain);
         center = _center;
         chunkSizeX = _chunkSizeX;
         chunkSizeY = _chunkSizeY;
@@ -43,7 +43,7 @@ public class MapChunk : MonoBehaviour
         hexTilePrefab = _hexTilePrefab;
         mapGenerator = _mapGenerator;
 
-        color = biomeData.GetColor();
+        color = terrainData.GetColor();
     }
 
     public void SetNeighbourChunk(MapChunk _chunk, UTIL.EPosition _ePosition)
@@ -158,29 +158,50 @@ public class MapChunk : MonoBehaviour
 
     private Color CalculateTileColor(Vector3 _tilePosition)
     {
-        Vector2 pos2D = StaticMaths.ThreeDTo2D(_tilePosition, StaticMaths.EPlane.E_XZ);
+        Color belowZero = new Color(204f/255f, 102f/255f, 0f);
+        Color zero = new Color(51f/255f, 102f/255f, 0f);
+        Color levelOne = new Color(170f / 255f, 170f / 255f, 170f / 255f);
+        Color levelTwo = new Color(0.9f, 0.9f, 0.9f);
 
-        MapChunk[,] chunks = mapGenerator.GetChunks();
-        Color c00 = chunks[0, 0].GetColor();
-        Color c10 = chunks[1, 0].GetColor();
-        Color c20 = chunks[2, 0].GetColor();
-        Color c01 = chunks[0, 1].GetColor();
-        Color c11 = chunks[1, 1].GetColor();
-        Color c21 = chunks[2, 1].GetColor();
-        Color c02 = chunks[0, 2].GetColor();
-        Color c12 = chunks[1, 2].GetColor();
-        Color c22 = chunks[2, 2].GetColor();
-
-        float[] distances = GetDistancesToChunkCenters(pos2D);
+        float[] distances = new float[] {
+            Mathf.Abs(_tilePosition.y - (-7f)),
+            Mathf.Abs(_tilePosition.y - (0f)),
+            Mathf.Abs(_tilePosition.y - (7f)),
+            Mathf.Abs(_tilePosition.y - (12f))
+        };
 
         Color averageColor = new Color(
             //first component (RED)
-            CalculateWeightedValue(new float[] {c00.r, c10.r, c20.r, c01.r, c11.r, c21.r, c02.r, c12.r, c22.r}, distances),
+            CalculateWeightedValue(new float[] { belowZero.r, zero.r, levelOne.r, levelTwo.r }, distances),
             //second component (GREEN)
-            CalculateWeightedValue(new float[] {c00.g, c10.g, c20.g, c01.g, c11.g, c21.g, c02.g, c12.g, c22.g}, distances),
+            CalculateWeightedValue(new float[] { belowZero.g, zero.g, levelOne.g, levelTwo.g }, distances),
             //third component (BLUE)
-            CalculateWeightedValue(new float[] {c00.b, c10.b, c20.b, c01.b, c11.b, c21.b, c02.b, c12.b, c22.b}, distances)
+            CalculateWeightedValue(new float[] { belowZero.b, zero.b, levelOne.b, levelTwo.b }, distances)
             );
+
+        //Vector2 pos2D = StaticMaths.ThreeDTo2D(_tilePosition, StaticMaths.EPlane.E_XZ);
+
+        //MapChunk[,] chunks = mapGenerator.GetChunks();
+        //Color c00 = chunks[0, 0].GetColor();
+        //Color c10 = chunks[1, 0].GetColor();
+        //Color c20 = chunks[2, 0].GetColor();
+        //Color c01 = chunks[0, 1].GetColor();
+        //Color c11 = chunks[1, 1].GetColor();
+        //Color c21 = chunks[2, 1].GetColor();
+        //Color c02 = chunks[0, 2].GetColor();
+        //Color c12 = chunks[1, 2].GetColor();
+        //Color c22 = chunks[2, 2].GetColor();
+
+        //float[] distances = GetDistancesToChunkCenters(pos2D);
+
+        //Color averageColor = new Color(
+        //    //first component (RED)
+        //    CalculateWeightedValue(new float[] {c00.r, c10.r, c20.r, c01.r, c11.r, c21.r, c02.r, c12.r, c22.r}, distances),
+        //    //second component (GREEN)
+        //    CalculateWeightedValue(new float[] {c00.g, c10.g, c20.g, c01.g, c11.g, c21.g, c02.g, c12.g, c22.g}, distances),
+        //    //third component (BLUE)
+        //    CalculateWeightedValue(new float[] {c00.b, c10.b, c20.b, c01.b, c11.b, c21.b, c02.b, c12.b, c22.b}, distances)
+        //    );
 
         return averageColor;
     }
@@ -190,15 +211,15 @@ public class MapChunk : MonoBehaviour
         Vector2 pos2D = StaticMaths.ThreeDTo2D(_tilePosition, StaticMaths.EPlane.E_XZ);
 
         MapChunk[,] chunks = mapGenerator.GetChunks();
-        float s00 = chunks[0, 0].biomeData.GetSmoothness();
-        float s10 = chunks[1, 0].biomeData.GetSmoothness();
-        float s20 = chunks[2, 0].biomeData.GetSmoothness();
-        float s01 = chunks[0, 1].biomeData.GetSmoothness();
-        float s11 = chunks[1, 1].biomeData.GetSmoothness();
-        float s21 = chunks[2, 1].biomeData.GetSmoothness();
-        float s02 = chunks[0, 2].biomeData.GetSmoothness();
-        float s12 = chunks[1, 2].biomeData.GetSmoothness();
-        float s22 = chunks[2, 2].biomeData.GetSmoothness();
+        float s00 = chunks[0, 0].terrainData.GetSmoothness();
+        float s10 = chunks[1, 0].terrainData.GetSmoothness();
+        float s20 = chunks[2, 0].terrainData.GetSmoothness();
+        float s01 = chunks[0, 1].terrainData.GetSmoothness();
+        float s11 = chunks[1, 1].terrainData.GetSmoothness();
+        float s21 = chunks[2, 1].terrainData.GetSmoothness();
+        float s02 = chunks[0, 2].terrainData.GetSmoothness();
+        float s12 = chunks[1, 2].terrainData.GetSmoothness();
+        float s22 = chunks[2, 2].terrainData.GetSmoothness();
 
         float smoothness = CalculateWeightedValue(new float[] { s00, s10, s20, s01, s11, s12, s20, s21, s22 }, GetDistancesToChunkCenters(pos2D));
 
@@ -210,15 +231,15 @@ public class MapChunk : MonoBehaviour
         Vector2 pos2D = StaticMaths.ThreeDTo2D(_tilePosition, StaticMaths.EPlane.E_XZ);
 
         MapChunk[,] chunks = mapGenerator.GetChunks();
-        float h00 = chunks[0, 0].biomeData.GetHeight();
-        float h10 = chunks[1, 0].biomeData.GetHeight();
-        float h20 = chunks[2, 0].biomeData.GetHeight();
-        float h01 = chunks[0, 1].biomeData.GetHeight();
-        float h11 = chunks[1, 1].biomeData.GetHeight();
-        float h21 = chunks[2, 1].biomeData.GetHeight();
-        float h02 = chunks[0, 2].biomeData.GetHeight();
-        float h12 = chunks[1, 2].biomeData.GetHeight();
-        float h22 = chunks[2, 2].biomeData.GetHeight();  
+        float h00 = chunks[0, 0].terrainData.GetHeight();
+        float h10 = chunks[1, 0].terrainData.GetHeight();
+        float h20 = chunks[2, 0].terrainData.GetHeight();
+        float h01 = chunks[0, 1].terrainData.GetHeight();
+        float h11 = chunks[1, 1].terrainData.GetHeight();
+        float h21 = chunks[2, 1].terrainData.GetHeight();
+        float h02 = chunks[0, 2].terrainData.GetHeight();
+        float h12 = chunks[1, 2].terrainData.GetHeight();
+        float h22 = chunks[2, 2].terrainData.GetHeight();  
 
         float smoothness = CalculateWeightedValue(new float[] { h00, h10, h20, h01, h11, h12, h20, h21, h22 }, GetDistancesToChunkCenters(pos2D));
 
@@ -260,12 +281,12 @@ public class MapChunk : MonoBehaviour
         float sumDistances = 0;
         float diagonal = Mathf.Sqrt(Mathf.Pow(CHUNK.Size.x * TILES.Offset.x, 2) + Mathf.Pow(CHUNK.Size.y * TILES.Offset.y, 2));
         float maxDistance = (3f / 2f) * diagonal;
-        int maxWeight = 15;
+        int maxWeight = 50;
 
 
         for(int i = 0 ; i < _values.Length; i++)
         {
-            for (int j = 1; j < maxWeight; j++)
+            for (int j = 1; j <= maxWeight; j++)
             {
                 if (_distances[i] <= (maxDistance / (float)j))
                 {
@@ -273,7 +294,7 @@ public class MapChunk : MonoBehaviour
                     summands++;
                 }
                 else
-                    j = maxWeight;
+                    j = maxWeight + 2;
             }
         }
 
@@ -305,6 +326,14 @@ public class MapChunk : MonoBehaviour
                 + CalculateTileHeight(pos), 
             -chunkSizeY, 
             chunkSizeY);
+
+        float heightStep = mapGenerator.GetDiscreteHeightStep();
+
+        if (heightStep != -1)
+        {
+            y = StaticMaths.Descretize(y, heightStep);
+        }
+
         return new Vector3(pos.x, y, pos.z);
     }
 
@@ -330,13 +359,13 @@ public class MapChunk : MonoBehaviour
         return heightMap;
     }
 
-    public BIOME GetBiomeData()
+    public TERRAIN GetTerrainData()
     {
-        return biomeData;
+        return terrainData;
     }
 
-    public EBiome GetBiome()
+    public ETerrain GetTerrain()
     {
-        return biome;
+        return terrain;
     }
 }
