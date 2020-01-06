@@ -6,7 +6,7 @@ namespace Meta_MapGenerator
 {
     public enum ETerrain
     {
-        //EBasic,
+        //every terrain type added here has to be added to the GetTerrainMap method, too
         EFlat_1,
         EFlat_2,
         EMountains,
@@ -33,9 +33,12 @@ namespace Meta_MapGenerator
         private float smoothness = 1f; //higher value meens smoother
         private Color color;
         private float height;
+        private int frequency;
 
-        public TERRAIN(float _baseSmoothness, Color _baseColor, float _baseHeight)
+        public TERRAIN(int _frequency, float _baseSmoothness, Color _baseColor, float _baseHeight)
         {
+            frequency = _frequency;
+
             smoothness = _baseSmoothness + StaticMaths.GetRandomFloat(-CHUNK.smoothnessVariance, CHUNK.smoothnessVariance);
 
             color = new Color(
@@ -47,27 +50,23 @@ namespace Meta_MapGenerator
             height = _baseHeight + StaticMaths.GetRandomFloat(-CHUNK.heightVariance, CHUNK.heightVariance);
         }
 
+        public static Dictionary<ETerrain, TERRAIN> GetTerrainMap()
+        {
+            Dictionary<ETerrain, TERRAIN> terrainMap = new Dictionary<ETerrain, TERRAIN>();
+
+            terrainMap.Add(ETerrain.EFlat_1, new TERRAIN(2, 8, Color.green, 1f));
+            terrainMap.Add(ETerrain.EFlat_2, new TERRAIN(2, 10, Color.yellow, 1f));
+            terrainMap.Add(ETerrain.ERoughRocks, new TERRAIN(1, 1, Color.red, 10f));
+            terrainMap.Add(ETerrain.EMountains, new TERRAIN(1, 7, Color.blue, 30f));
+            terrainMap.Add(ETerrain.EGulch, new TERRAIN(1, 7, Color.grey, -10f));
+            terrainMap.Add(ETerrain.EValley, new TERRAIN(1, 3, Color.grey, -7f));
+
+            return terrainMap;
+        }
+
         public static TERRAIN GetTerrainData(ETerrain _eTerrain)
         {
-            switch (_eTerrain)
-            {
-                //case EBiome.EBasic:
-                //    return new BIOME(5, Color.gray);
-                case ETerrain.EFlat_1:
-                    return new TERRAIN(8, Color.green, 1f);
-                case ETerrain.EFlat_2:
-                    return new TERRAIN(10, Color.yellow, 1f);
-                case ETerrain.ERoughRocks:
-                    return new TERRAIN(1, Color.red, 10f); //0.9
-                case ETerrain.EMountains:
-                    return new TERRAIN(7, Color.blue, 30f);
-                case ETerrain.EGulch:
-                    return new TERRAIN(7, Color.grey, -10f);
-                case ETerrain.EValley:
-                    return new TERRAIN(3, Color.grey, -7f);
-            }
-
-            return new TERRAIN(5, Color.gray, 0f);
+            return GetTerrainMap()[_eTerrain];
         }
 
         public float GetSmoothness()
@@ -85,10 +84,35 @@ namespace Meta_MapGenerator
             return height;
         }
 
+        public int GetFrequency()
+        {
+            return frequency;
+        }
+
         public static ETerrain GetRandomTerrain()
         {
             System.Array values = System.Enum.GetValues(typeof(ETerrain));
             return (ETerrain)Random.Range(0, values.Length);
+        }
+
+        public static ETerrain GetRandomTerrainByFrequency()
+        {
+            List<ETerrain> terrainSet = new List<ETerrain>();
+
+            Dictionary<ETerrain, TERRAIN> terrainMap = GetTerrainMap();
+
+            System.Array values = System.Enum.GetValues(typeof(ETerrain));
+            for (int i = 0; i < values.Length; i++)
+            {
+                int frequency = terrainMap[(ETerrain)values.GetValue(i)].GetFrequency();
+
+                for (int j = 0; j < frequency; j++)
+                {
+                    terrainSet.Add((ETerrain)values.GetValue(i));
+                }
+            }
+
+            return terrainSet[Random.Range(0, terrainSet.Count)];
         }
     }
 }

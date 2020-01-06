@@ -61,7 +61,7 @@ public class HexTileMapGenerator : MonoBehaviour
 
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
-                terrain[i, j] = TERRAIN.GetRandomTerrain();
+                terrain[i, j] = TERRAIN.GetRandomTerrainByFrequency();
 
         //terrain[0, 0] = ETerrain.EMountains;
         //terrain[1, 0] = ETerrain.EMountains;
@@ -277,7 +277,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[0, 0] == null)
         {
             chunks[0, 0] = gameObject.AddComponent<MapChunk>();
-            chunks[0, 0].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[0, 0].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[0, 1] != null)
                 chunks[0, 0].SetNeighbourChunk(chunks[0, 1], UTIL.EPosition.EBelow);
@@ -290,7 +290,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[0, 1] == null)
         {
             chunks[0, 1] = gameObject.AddComponent<MapChunk>();
-            chunks[0, 1].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, 0), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[0, 1].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, 0), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[0, 0] != null)
                 chunks[0, 1].SetNeighbourChunk(chunks[0, 0], UTIL.EPosition.EAbove);
@@ -305,7 +305,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[0, 2] == null)
         {
             chunks[0, 2] = gameObject.AddComponent<MapChunk>();
-            chunks[0, 2].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[0, 2].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[1, 2] != null)
                 chunks[0, 2].SetNeighbourChunk(chunks[1, 2], UTIL.EPosition.ERight);
@@ -363,7 +363,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[2, 0] == null)
         {
             chunks[2, 0] = gameObject.AddComponent<MapChunk>();
-            chunks[2, 0].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[2, 0].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[2, 1] != null)
                 chunks[2, 0].SetNeighbourChunk(chunks[2, 1], UTIL.EPosition.EBelow);
@@ -376,7 +376,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[2, 1] == null)
         {
             chunks[2, 1] = gameObject.AddComponent<MapChunk>();
-            chunks[2, 1].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, 0), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[2, 1].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, 0), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[2, 0] != null)
                 chunks[2, 1].SetNeighbourChunk(chunks[2, 0], UTIL.EPosition.EAbove);
@@ -391,7 +391,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[2, 2] == null)
         {
             chunks[2, 2] = gameObject.AddComponent<MapChunk>();
-            chunks[2, 2].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[2, 2].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[1, 2] != null)
                 chunks[2, 2].SetNeighbourChunk(chunks[1, 2], UTIL.EPosition.ELeft);
@@ -450,7 +450,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[0, 2] == null)
         {
             chunks[0, 2] = gameObject.AddComponent<MapChunk>();
-            chunks[0, 2].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[0, 2].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[1, 2] != null)
                 chunks[0, 2].SetNeighbourChunk(chunks[1, 2], UTIL.EPosition.ERight);
@@ -464,7 +464,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[1, 2] == null)
         {
             chunks[1, 2] = gameObject.AddComponent<MapChunk>();
-            chunks[1, 2].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(0, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[1, 2].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(0, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[0, 2] != null)
                 chunks[1, 2].SetNeighbourChunk(chunks[0, 2], UTIL.EPosition.ELeft);
@@ -480,7 +480,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[2, 2] == null)
         {
             chunks[2, 2] = gameObject.AddComponent<MapChunk>();
-            chunks[2, 2].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[2, 2].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[1, 2] != null)
                 chunks[2, 2].SetNeighbourChunk(chunks[1, 2], UTIL.EPosition.ELeft);
@@ -539,7 +539,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[0, 0] == null)
         {
             chunks[0, 0] = gameObject.AddComponent<MapChunk>();
-            chunks[0, 0].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[0, 0].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[1, 0] != null)
                 chunks[0, 0].SetNeighbourChunk(chunks[1, 0], UTIL.EPosition.ERight);
@@ -553,7 +553,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[1, 0] == null)
         {
             chunks[1, 0] = gameObject.AddComponent<MapChunk>();
-            chunks[1, 0].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(0, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[1, 0].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(0, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[0, 0] != null)
                 chunks[1, 0].SetNeighbourChunk(chunks[0, 0], UTIL.EPosition.ELeft);
@@ -570,7 +570,7 @@ public class HexTileMapGenerator : MonoBehaviour
         if (chunks[2, 0] == null)
         {
             chunks[2, 0] = gameObject.AddComponent<MapChunk>();
-            chunks[2, 0].InitChunk(TERRAIN.GetRandomTerrain(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+            chunks[2, 0].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, -chunkSizeZ), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
             if (chunks[1, 0] != null)
                 chunks[2, 0].SetNeighbourChunk(chunks[1, 0], UTIL.EPosition.ELeft);

@@ -135,7 +135,8 @@ public class MapChunk : MonoBehaviour
 
     private void SetTileInfo(GameObject _tile, int _x, int _z)
     {
-        _tile.GetComponentInChildren<MeshRenderer>().material.color = CalculateTileColor(_tile.transform.position);
+        _tile.GetComponentInChildren<MeshRenderer>().material.SetColor("Color_8F328A1B", CalculateTileColor(_tile.transform.position));
+        //_tile.GetComponentInChildren<MeshRenderer>().material.color = CalculateTileColor(_tile.transform.position);
         _tile.transform.parent = transform;
     }
 
