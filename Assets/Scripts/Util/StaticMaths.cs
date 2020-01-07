@@ -192,4 +192,11 @@ public class StaticMaths
 
         return _step * x;
     }
+
+    public static float FloatModulo(float _value, float _limit)
+    {
+        float x = Mathf.Round(_value / _limit);
+
+        return _value - (_limit * x);
+    }
 }

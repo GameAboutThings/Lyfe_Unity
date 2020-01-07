@@ -7,7 +7,7 @@ public class MapChunk : MonoBehaviour
 {
     private GameObject hexTilePrefab;
 
-    HexTileMapGenerator mapGenerator;
+    HexTileMapGenerator_V2 mapGenerator;
 
     Vector3[,] heightMap;
     ETerrain terrain;
@@ -15,9 +15,9 @@ public class MapChunk : MonoBehaviour
 
     List<GameObject> tiles;
 
-    Vector3 center;
-
     Color color;
+
+    Vector3 center;
 
     int chunkSizeX = 50;
     int chunkSizeY = 50;
@@ -27,12 +27,14 @@ public class MapChunk : MonoBehaviour
     private float spacingZ = 1f;
     private float granularity = .2f;
 
+    private Vector2 seedOffset;
+
     MapChunk above;
     MapChunk below;
     MapChunk right;
     MapChunk left;
 
-    public void InitChunk(ETerrain _terrain, Vector3 _center, int _chunkSizeX, int _chunkSizeY, int _chunkSizeZ, GameObject _hexTilePrefab, HexTileMapGenerator _mapGenerator)
+    public void InitChunk(ETerrain _terrain, Vector3 _center, int _chunkSizeX, int _chunkSizeY, int _chunkSizeZ, GameObject _hexTilePrefab, HexTileMapGenerator_V2 _mapGenerator)
     {
         terrain = _terrain;
         terrainData = TERRAIN.GetTerrainData(terrain);
@@ -42,6 +44,7 @@ public class MapChunk : MonoBehaviour
         chunkSizeZ = _chunkSizeZ;
         hexTilePrefab = _hexTilePrefab;
         mapGenerator = _mapGenerator;
+        seedOffset = UTIL.GetSeedVectorFromString(mapGenerator.GetSeed());
 
         color = terrainData.GetColor();
     }
@@ -281,7 +284,7 @@ public class MapChunk : MonoBehaviour
         float summands = 0;
         float sumDistances = 0;
         float diagonal = Mathf.Sqrt(Mathf.Pow(CHUNK.Size.x * TILES.Offset.x, 2) + Mathf.Pow(CHUNK.Size.y * TILES.Offset.y, 2));
-        float maxDistance = (3f / 2f) * diagonal;
+        float maxDistance = (5f / 2f) * diagonal;
         int maxWeight = 50;
 
 
@@ -323,7 +326,7 @@ public class MapChunk : MonoBehaviour
     {
         Vector3 pos = new Vector3(_x * spacingX, 0, _z * spacingZ);
         float y = StaticMaths.Cap(
-            Mathf.PerlinNoise(_x * granularity, _z * granularity) * 10f / CalculateTileSmoothness(pos)
+            Mathf.PerlinNoise(_x * granularity + seedOffset.x, _z * granularity + seedOffset.y) * 10f / CalculateTileSmoothness(pos)
                 + CalculateTileHeight(pos), 
             -chunkSizeY, 
             chunkSizeY);

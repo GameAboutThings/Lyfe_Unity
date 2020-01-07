@@ -10,9 +10,17 @@ namespace Meta_MapGenerator
         EFlat_1,
         EFlat_2,
         EMountains,
+        EExtremeMountain,
         ERoughRocks,
         EGulch,
-        EValley
+        EValley,
+        EHighPlateau,
+        ELowPlatou
+    }
+
+    class MISC
+    {
+        public static int seedLength = 18;
     }
 
     class TILES
@@ -22,7 +30,7 @@ namespace Meta_MapGenerator
 
     class CHUNK
     {
-        public static Vector3Int Size = new Vector3Int(30, 50, 30);
+        public static Vector3Int Size = new Vector3Int(30, 70, 30);
         public static float heightVariance = 1f;
         public static float smoothnessVariance = 0.5f;
         public static float colorVariance = 0.3f;
@@ -54,12 +62,15 @@ namespace Meta_MapGenerator
         {
             Dictionary<ETerrain, TERRAIN> terrainMap = new Dictionary<ETerrain, TERRAIN>();
 
-            terrainMap.Add(ETerrain.EFlat_1, new TERRAIN(2, 8, Color.green, 1f));
+            terrainMap.Add(ETerrain.EFlat_1, new TERRAIN(3, 8, Color.green, 1f));
             terrainMap.Add(ETerrain.EFlat_2, new TERRAIN(2, 10, Color.yellow, 1f));
             terrainMap.Add(ETerrain.ERoughRocks, new TERRAIN(1, 1, Color.red, 10f));
             terrainMap.Add(ETerrain.EMountains, new TERRAIN(1, 7, Color.blue, 30f));
+            terrainMap.Add(ETerrain.EExtremeMountain, new TERRAIN(1, 5, Color.blue, 50f));
             terrainMap.Add(ETerrain.EGulch, new TERRAIN(1, 7, Color.grey, -10f));
             terrainMap.Add(ETerrain.EValley, new TERRAIN(1, 3, Color.grey, -7f));
+            terrainMap.Add(ETerrain.EHighPlateau, new TERRAIN(1, 8, Color.grey, 10f));
+            terrainMap.Add(ETerrain.ELowPlatou, new TERRAIN(1, 8, Color.grey, -2f));
 
             return terrainMap;
         }
