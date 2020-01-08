@@ -21,69 +21,58 @@ public class MeshList<T>
 
     private Element<T> GetElementAt(int _x, int _y, bool _throwException)
     {
-        //Debug.Log("finding element at " + _x + "," + _y);
-        int x, y;
-        x = _x;
-        y = _y;
-
-        if (!CheckCenter(_throwException))
-            return null;
+        ArrayList queue = new ArrayList();
 
         Element<T> currentElement = centerElement;
+        if (centerElement == null)
+            return default(T);
 
-        while (_x != 0)
+        Element<T> t = currentElement.GetAbove();
+        if (t != null)
+            queue.Add(t);
+        t = currentElement.GetBelow();
+        if (t != null)
+            queue.Add(t);
+        t = currentElement.GetRight();
+        if (t != null)
+            queue.Add(t);
+        t = currentElement.GetLeft();
+        if (t != null)
+            queue.Add(t);
+
+        while (queue.Count != 0)
         {
-            //x > 0 => move right
-            if (_x > 0)
-            {
-                currentElement = currentElement.GetRight();
-                _x--;
-            }
-            //x < 0 => move left
-            else
-            {
-                currentElement = currentElement.GetLeft();
-                _x++;
-            }
+            //get current element and remove it from the queue
+            currentElement = (Element<T>)queue[0];
+            queue.Remove(currentElement);
+            //set its marker
+            currentElement.SetMarker(true);
 
-            //Debug.Log((x - _x) + "," + (y - _y) + " = " + currentElement);
+            Tuple<int, int> coord = currentElement.GetCoordinate();
 
-            if (currentElement == null)
+            if (coord.Item1 = _x && coord.Item2 = _y)
             {
-                if(_throwException)
-                    ThrowElementNotFoundAtIndex(x, y);
+                SetAllMarkers(false);
+                return currentElement.GetValue();
+            }             
 
-                return null;
-            }
+            //get all neghbouring elements and add them to the queue
+            t = currentElement.GetAbove();
+            if (t != null && !t.GetMarker())
+                queue.Add(t);
+            t = currentElement.GetBelow();
+            if (t != null && !t.GetMarker())
+                queue.Add(t);
+            t = currentElement.GetRight();
+            if (t != null && !t.GetMarker())
+                queue.Add(t);
+            t = currentElement.GetLeft();
+            if (t != null && !t.GetMarker())
+                queue.Add(t);
         }
 
-        while (_y != 0)
-        {
-            //y > 0 => move up
-            if (_y > 0)
-            {
-                currentElement = currentElement.GetAbove();
-                _y--;
-            }
-            //y < 0 => move down
-            else
-            {
-                currentElement = currentElement.GetBelow();
-                _y++;
-            }
-
-            //Debug.Log((x - _x) + "," + (y - _y) + " = " + currentElement);
-
-            if (currentElement == null)
-            {
-                if (_throwException)
-                    ThrowElementNotFoundAtIndex(x, y);
-
-                return null;
-            }
-        }
-
-        return currentElement;
+        SetAllMarkers(false);
+        return default(T);
     }
 
     public T GetAt(int _x, int _y)
