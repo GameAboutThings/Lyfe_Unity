@@ -28,7 +28,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
     //[(0,0) (1,0) (2,0)]
     MapChunk[,] chunks; //currently loaded chunks
 
-    PositionMap<MapChunk> chunkStorage;
+    MeshList<MapChunk> chunkStorage;
 
     void Start()
     {
@@ -76,7 +76,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
     private void InstantiateChunks(Meta_MapGenerator.ETerrain[,] _startTerrain)
     {
         chunks = new MapChunk[3, 3];
-        chunkStorage = new PositionMap<MapChunk>();
+        chunkStorage = new MeshList<MapChunk>();
 
         chunks[0, 0] = gameObject.AddComponent<MapChunk>();
         chunks[0, 0].InitChunk(_startTerrain[0, 0], StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, -chunkSizeZ), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
@@ -99,7 +99,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
         chunks[2, 2] = gameObject.AddComponent<MapChunk>();
         chunks[2, 2].InitChunk(_startTerrain[2, 2], StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, chunkSizeZ), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
 
-        chunkStorage.HardInsert(chunks[0, 0], new Vector2Int(-1, -1));
+        /*chunkStorage.HardInsert(chunks[0, 0], new Vector2Int(-1, -1));
         chunkStorage.HardInsert(chunks[1, 0], new Vector2Int(0, -1));
         chunkStorage.HardInsert(chunks[2, 0], new Vector2Int(1, -1));
 
@@ -109,7 +109,22 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
 
         chunkStorage.HardInsert(chunks[0, 2], new Vector2Int(-1, 1));
         chunkStorage.HardInsert(chunks[1, 2], new Vector2Int(0, 1));
-        chunkStorage.HardInsert(chunks[2, 2], new Vector2Int(1, 1));
+        chunkStorage.HardInsert(chunks[2, 2], new Vector2Int(1, 1));*/
+
+        //middle row
+        chunkStorage.SetCenter(chunks[1, 1]);
+        chunkStorage.AddLeft(0, 0, chunks[0, 1]);
+        chunkStorage.AddRight(0, 0, chunks[2, 1]);
+
+        //top row
+        chunkStorage.AddAbove(0, 0, chunks[1, 2]);
+        chunkStorage.AddLeft(0, 1, chunks[0, 2]);
+        chunkStorage.AddRight(0, 1, chunks[2, 2]);
+
+        //bottom row
+        chunkStorage.AddBelow(0, 0, chunks[1, 0]);
+        chunkStorage.AddLeft(0, -1, chunks[0, 0]);
+        chunkStorage.AddRight(0, -1, chunks[2, 0]);
 
         chunks[0, 0].GenerateMap();
         chunks[1, 0].GenerateMap();
@@ -261,20 +276,22 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
         {
             if (chunks[i, row] == null)
             {
-                Debug.Log("trying to generate " + i + "," + row);
+                //Debug.Log("trying to generate " + i + "," + row);
                 chunks[i, row] = gameObject.AddComponent<MapChunk>();
                 chunks[i, row].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX * (i - 1), 0, chunkSizeZ * (row - 1)), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
                 if(_up)
-                    chunkStorage.HardInsert(chunks[i, row], new Vector2Int(currentStoragePosition.x + (i - 1), currentStoragePosition.y + 1));
+                    chunkStorage.AddAbove(currentStoragePosition.x + (i - 1), currentStoragePosition.y, chunks[i, row]);
+                    //chunkStorage.HardInsert(chunks[i, row], new Vector2Int(currentStoragePosition.x + (i - 1), currentStoragePosition.y + 1));
                 else
-                    chunkStorage.HardInsert(chunks[i, row], new Vector2Int(currentStoragePosition.x + (i - 1), currentStoragePosition.y - 1));
+                    chunkStorage.AddAbelow(currentStoragePosition.x + (i - 1), currentStoragePosition.y, chunks[i, row]);
+                    //chunkStorage.HardInsert(chunks[i, row], new Vector2Int(currentStoragePosition.x + (i - 1), currentStoragePosition.y - 1));
             }
         }
         for (int i = 0; i < 3; i++)
         {
             //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-            Debug.Log("generating map for " + i + "," + row);
-            Debug.Log("chunks at that position = " + chunks[i, row]);
+            //Debug.Log("generating map for " + i + "," + row);
+            //Debug.Log("chunks at that position = " + chunks[i, row]);
             chunks[i, row].GenerateMap();
         }
     }
@@ -307,9 +324,11 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
                 chunks[column, i] = gameObject.AddComponent<MapChunk>();
                 chunks[column, i].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX * (column - 1), 0, chunkSizeZ * (i - 1)), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
                 if(_right)
-                    chunkStorage.HardInsert(chunks[column, i], new Vector2Int(currentStoragePosition.x + 1, currentStoragePosition.y + (i - 1)));
+                    chunkStorage.AddRight(currentStoragePosition.x, currentStoragePosition.y + (i - 1), chunks[column, i]);
+                    //chunkStorage.HardInsert(chunks[column, i], new Vector2Int(currentStoragePosition.x + 1, currentStoragePosition.y + (i - 1)));
                 else
-                    chunkStorage.HardInsert(chunks[column, i], new Vector2Int(currentStoragePosition.x - 1, currentStoragePosition.y + (i - 1)));
+                    chunkStorage.AddLeft(currentStoragePosition.x, currentStoragePosition.y + (i - 1), chunks[column, i]);
+                    //chunkStorage.HardInsert(chunks[column, i], new Vector2Int(currentStoragePosition.x - 1, currentStoragePosition.y + (i - 1)));
             }
         }
         for (int i = 0; i < 3; i++)
