@@ -43,5 +43,8 @@ namespace Meta_MapGenerator
         public static float heightVariance = 1f;
         public static float smoothnessVariance = 0.5f;
         public static float colorVariance = 0.3f;
+
+        public static Vector2 baseSize = new Vector2(CHUNK.tileCount.x * TILES.Offset.x, CHUNK.tileCount.z * TILES.Offset.z);
+        public static Vector2 sizeVariance = new Vector2(50f, 50f);
     }
 }

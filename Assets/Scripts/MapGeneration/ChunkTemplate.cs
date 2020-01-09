@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class ChunkTemplate : MonoBehaviour
+public abstract class ChunkTemplate
 {
     protected Vector3 center;
 

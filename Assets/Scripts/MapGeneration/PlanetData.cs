@@ -10,6 +10,7 @@ public class PlanetData
     private Color zero = new Color(51f / 255f, 102f / 255f, 0f); //seaLevel
     private Color levelOne = new Color(170f / 255f, 170f / 255f, 170f / 255f);
     private Color levelTwo = new Color(0.9f, 0.9f, 0.9f);
+    private Vector2 terrainSize = TERRAIN.baseSize;
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -27,9 +28,21 @@ public class PlanetData
         seaLevel = _seaLevel;
     }
 
-    public PlanetData(int _seaLevel, Color _colorBelowZero, Color _colorZero, Color _colorLevelOne, Color _colorLevelTwo)
+    public PlanetData(Vector2 _terrainSize)
+    {
+        terrainSize = _terrainSize;
+    }
+
+    public PlanetData(int _seaLevel, Vector2 _terrainSize)
     {
         seaLevel = _seaLevel;
+        terrainSize = _terrainSize;
+    }
+
+    public PlanetData(int _seaLevel, Vector2 _terrainSize, Color _colorBelowZero, Color _colorZero, Color _colorLevelOne, Color _colorLevelTwo)
+    {
+        seaLevel = _seaLevel;
+        terrainSize = _terrainSize;
         belowZero = _colorBelowZero;
         zero = _colorZero;
         levelOne = _colorLevelOne;
@@ -44,7 +57,10 @@ public class PlanetData
 
     public static PlanetData GetRandomPlanetData()
     {
-        return new PlanetData(Random.Range(- PLANET.seaLevelVariance.Item1, PLANET.seaLevelVariance.Item2));
+        return new PlanetData(Random.Range(- PLANET.seaLevelVariance.Item1, PLANET.seaLevelVariance.Item2),
+                            TERRAIN.baseSize + new Vector2(Random.Range(-TERRAIN.sizeVariance.x, TERRAIN.sizeVariance.x)
+                                                        , Random.Range(-TERRAIN.sizeVariance.y, TERRAIN.sizeVariance.y))
+                            );
     }
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -75,5 +91,10 @@ public class PlanetData
     public Color GetColorLevelTwo()
     {
         return levelTwo;
+    }
+
+    public Vector2 GetTerrainSize()
+    {
+        return terrainSize;
     }
 }

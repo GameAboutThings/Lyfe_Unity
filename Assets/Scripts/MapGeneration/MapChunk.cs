@@ -10,8 +10,6 @@ public class MapChunk : ChunkTemplate
     HexTileMapGenerator_V2 mapGenerator;
 
     Vector3[,] heightMap;
-    TERRAIN.ETerrain terrain; // remove
-    TerrainData terrainData; // remove
     PlanetData planetData;
 
     List<GameObject> tiles;
@@ -26,10 +24,8 @@ public class MapChunk : ChunkTemplate
 
     private Vector2 seedOffset;
 
-    public void InitChunk(TERRAIN.ETerrain _terrain, Vector3 _center, int _tileCountX, int _tileCountY, int _tileCountZ, GameObject _hexTilePrefab, HexTileMapGenerator_V2 _mapGenerator)
+    public MapChunk(Vector3 _center, int _tileCountX, int _tileCountY, int _tileCountZ, GameObject _hexTilePrefab, HexTileMapGenerator_V2 _mapGenerator)
     {
-        terrain = _terrain;
-        terrainData = TerrainData.GetTerrainData(terrain);
         center = _center;
         tileCountX = _tileCountX;
         tileCountY = _tileCountY;
@@ -73,7 +69,7 @@ public class MapChunk : ChunkTemplate
                                     pos.z * TILES.Offset.z - (0.5f * tileCountZ));
                 }
 
-                GameObject tile = Instantiate(hexTilePrefab, pos, Quaternion.identity);
+                GameObject tile = mapGenerator.SetTile(pos);
                 tiles.Add(tile);
                 SetTileInfo(tile, x, z);
             }
@@ -83,8 +79,7 @@ public class MapChunk : ChunkTemplate
     private void SetTileInfo(GameObject _tile, int _x, int _z)
     {
         _tile.GetComponentInChildren<MeshRenderer>().material.SetColor("Color_8F328A1B", CalculateTileColor(_tile.transform.position));
-        //_tile.GetComponentInChildren<MeshRenderer>().material.color = CalculateTileColor(_tile.transform.position);
-        _tile.transform.parent = transform;
+        //_tile.GetComponentInChildren<MeshRenderer>().material.color = CalculateTileColor(_tile.transform.position);     
     }
 
     public void Clear()
@@ -94,7 +89,7 @@ public class MapChunk : ChunkTemplate
 
         while (tiles.Count != 0)
         {
-            Destroy(tiles[0]);
+            mapGenerator.DestroyGameObject(tiles[0]);
             tiles.Remove(tiles[0]);
         }
     }
@@ -129,18 +124,30 @@ public class MapChunk : ChunkTemplate
     {
         Vector2 pos2D = StaticMaths.ThreeDTo2D(_tilePosition, StaticMaths.EPlane.E_XZ);
 
-        MapChunk[,] chunks = mapGenerator.GetChunks();
-        float s00 = chunks[0, 0].terrainData.GetSmoothness();
-        float s10 = chunks[1, 0].terrainData.GetSmoothness();
-        float s20 = chunks[2, 0].terrainData.GetSmoothness();
-        float s01 = chunks[0, 1].terrainData.GetSmoothness();
-        float s11 = chunks[1, 1].terrainData.GetSmoothness();
-        float s21 = chunks[2, 1].terrainData.GetSmoothness();
-        float s02 = chunks[0, 2].terrainData.GetSmoothness();
-        float s12 = chunks[1, 2].terrainData.GetSmoothness();
-        float s22 = chunks[2, 2].terrainData.GetSmoothness();
+        TerrainChunk[,] chunks = mapGenerator.GetTerrainChunks();
+        //float s00 = chunks[0, 0].terrainData.GetSmoothness();
+        //float s10 = chunks[1, 0].terrainData.GetSmoothness();
+        //float s20 = chunks[2, 0].terrainData.GetSmoothness();
+        //float s01 = chunks[0, 1].terrainData.GetSmoothness();
+        //float s11 = chunks[1, 1].terrainData.GetSmoothness();
+        //float s21 = chunks[2, 1].terrainData.GetSmoothness();
+        //float s02 = chunks[0, 2].terrainData.GetSmoothness();
+        //float s12 = chunks[1, 2].terrainData.GetSmoothness();
+        //float s22 = chunks[2, 2].terrainData.GetSmoothness();
 
-        float smoothness = CalculateWeightedValue(new float[] { s00, s10, s20, s01, s11, s12, s20, s21, s22 }, GetDistancesToChunkCenters(pos2D));
+        int dim = mapGenerator.GetTerrainDimension();
+
+        float[] smoothnesses = new float[dim * dim];
+
+        for (int x = 0; x < dim; x++)
+        {
+            for (int y = 0; y < dim; y++)
+            {
+                smoothnesses[y * dim + x] = chunks[x, y].GetTerrainData().GetSmoothness();
+            }
+        }
+
+        float smoothness = CalculateWeightedValue(/*new float[] { s00, s10, s20, s01, s11, s12, s20, s21, s22 }*/smoothnesses, GetDistancesToChunkCenters(pos2D));
 
         return  smoothness;
     }
@@ -149,18 +156,30 @@ public class MapChunk : ChunkTemplate
     {
         Vector2 pos2D = StaticMaths.ThreeDTo2D(_tilePosition, StaticMaths.EPlane.E_XZ);
 
-        MapChunk[,] chunks = mapGenerator.GetChunks();
-        float h00 = chunks[0, 0].terrainData.GetHeight();
-        float h10 = chunks[1, 0].terrainData.GetHeight();
-        float h20 = chunks[2, 0].terrainData.GetHeight();
-        float h01 = chunks[0, 1].terrainData.GetHeight();
-        float h11 = chunks[1, 1].terrainData.GetHeight();
-        float h21 = chunks[2, 1].terrainData.GetHeight();
-        float h02 = chunks[0, 2].terrainData.GetHeight();
-        float h12 = chunks[1, 2].terrainData.GetHeight();
-        float h22 = chunks[2, 2].terrainData.GetHeight();  
+        TerrainChunk[,] chunks = mapGenerator.GetTerrainChunks();
+        //float h00 = chunks[0, 0].GetTerrainData().GetHeight();
+        //float h10 = chunks[1, 0].GetTerrainData().GetHeight();
+        //float h20 = chunks[2, 0].GetTerrainData().GetHeight();
+        //float h01 = chunks[0, 1].GetTerrainData().GetHeight();
+        //float h11 = chunks[1, 1].GetTerrainData().GetHeight();
+        //float h21 = chunks[2, 1].GetTerrainData().GetHeight();
+        //float h02 = chunks[0, 2].GetTerrainData().GetHeight();
+        //float h12 = chunks[1, 2].GetTerrainData().GetHeight();
+        //float h22 = chunks[2, 2].GetTerrainData().GetHeight();
 
-        float smoothness = CalculateWeightedValue(new float[] { h00, h10, h20, h01, h11, h12, h20, h21, h22 }, GetDistancesToChunkCenters(pos2D));
+        int dim = mapGenerator.GetTerrainDimension();
+
+        float[] heights = new float[dim * dim];
+
+        for (int x = 0; x < dim; x++)
+        {
+            for (int y = 0; y < dim; y++)
+            {
+                heights[y * dim + x] = chunks[x, y].GetTerrainData().GetHeight();
+            }
+        }
+
+        float smoothness = CalculateWeightedValue(/*new float[] { h00, h10, h20, h01, h11, h12, h20, h21, h22 }*/ heights, GetDistancesToChunkCenters(pos2D));
 
         return smoothness;
     }
@@ -169,29 +188,40 @@ public class MapChunk : ChunkTemplate
     {
         Vector2 pos2D = _tilePosition;
 
-        MapChunk[,] chunks = mapGenerator.GetChunks();
+        TerrainChunk[,] chunks = mapGenerator.GetTerrainChunks();
 
-        Vector2 cen00 = StaticMaths.ThreeDTo2D(chunks[0, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen10 = StaticMaths.ThreeDTo2D(chunks[1, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen20 = StaticMaths.ThreeDTo2D(chunks[2, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen01 = StaticMaths.ThreeDTo2D(chunks[0, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen11 = StaticMaths.ThreeDTo2D(chunks[1, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen21 = StaticMaths.ThreeDTo2D(chunks[2, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen02 = StaticMaths.ThreeDTo2D(chunks[0, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen12 = StaticMaths.ThreeDTo2D(chunks[1, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
-        Vector2 cen22 = StaticMaths.ThreeDTo2D(chunks[2, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
+        //Vector2 cen00 = StaticMaths.ThreeDTo2D(chunks[0, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
+        //Vector2 cen10 = StaticMaths.ThreeDTo2D(chunks[1, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
+        //Vector2 cen20 = StaticMaths.ThreeDTo2D(chunks[2, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
+        //Vector2 cen01 = StaticMaths.ThreeDTo2D(chunks[0, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
+        //Vector2 cen11 = StaticMaths.ThreeDTo2D(chunks[1, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
+        //Vector2 cen21 = StaticMaths.ThreeDTo2D(chunks[2, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
+        //Vector2 cen02 = StaticMaths.ThreeDTo2D(chunks[0, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
+        //Vector2 cen12 = StaticMaths.ThreeDTo2D(chunks[1, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
+        //Vector2 cen22 = StaticMaths.ThreeDTo2D(chunks[2, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
 
-        float d00 = StaticMaths.Distance2D(pos2D, cen00);
-        float d10 = StaticMaths.Distance2D(pos2D, cen10);
-        float d20 = StaticMaths.Distance2D(pos2D, cen20);
-        float d01 = StaticMaths.Distance2D(pos2D, cen01);
-        float d11 = StaticMaths.Distance2D(pos2D, cen11);
-        float d21 = StaticMaths.Distance2D(pos2D, cen21);
-        float d02 = StaticMaths.Distance2D(pos2D, cen02);
-        float d12 = StaticMaths.Distance2D(pos2D, cen12);
-        float d22 = StaticMaths.Distance2D(pos2D, cen22);
+        //float d00 = StaticMaths.Distance2D(pos2D, cen00);
+        //float d10 = StaticMaths.Distance2D(pos2D, cen10);
+        //float d20 = StaticMaths.Distance2D(pos2D, cen20);
+        //float d01 = StaticMaths.Distance2D(pos2D, cen01);
+        //float d11 = StaticMaths.Distance2D(pos2D, cen11);
+        //float d21 = StaticMaths.Distance2D(pos2D, cen21);
+        //float d02 = StaticMaths.Distance2D(pos2D, cen02);
+        //float d12 = StaticMaths.Distance2D(pos2D, cen12);
+        //float d22 = StaticMaths.Distance2D(pos2D, cen22);
 
-        return new float[] { d00, d10, d20, d01, d11, d12, d20, d21, d22 };
+        int dim = mapGenerator.GetTerrainDimension();
+        float[] distances = new float[dim * dim];
+
+        for (int x = 0; x < dim; x++)
+        {
+            for (int y = 0; y < dim; y++)
+            {
+                distances[y * dim + x] = StaticMaths.Distance2D(pos2D, StaticMaths.ThreeDTo2D(chunks[x, y].GetCenter(), StaticMaths.EPlane.E_XZ));
+            }
+        }
+
+        return distances; //new float[] { d00, d10, d20, d01, d11, d12, d20, d21, d22 };
     }
 
     private float CalculateWeightedValue(float[] _values, float[] _distances)
@@ -199,7 +229,7 @@ public class MapChunk : ChunkTemplate
         float summands = 0;
         float sumDistances = 0;
         float diagonal = Mathf.Sqrt(Mathf.Pow(CHUNK.tileCount.x * TILES.Offset.x, 2) + Mathf.Pow(CHUNK.tileCount.y * TILES.Offset.y, 2));
-        float maxDistance = (5f / 2f) * diagonal;
+        float maxDistance = (2.5f) * diagonal;
         int maxWeight = 50;
 
 
@@ -271,15 +301,5 @@ public class MapChunk : ChunkTemplate
         }
 
         return heightMap;
-    }
-
-    public TerrainData GetTerrainData() //remove
-    {
-        return terrainData;
-    }
-
-    public TERRAIN.ETerrain GetTerrain() //remove
-    {
-        return terrain;
     }
 }
