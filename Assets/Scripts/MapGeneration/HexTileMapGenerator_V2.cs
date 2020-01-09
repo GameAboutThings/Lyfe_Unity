@@ -7,16 +7,17 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
 {
     [SerializeField]
     private GameObject hexTilePrefab;
-
     [SerializeField]
     GameObject playerCamera;
+    [SerializeField]
+    GameObject waterLevel;
 
     [SerializeField]
     string seed;
 
-    int chunkSizeX = CHUNK.Size.x;
-    int chunkSizeY = CHUNK.Size.y;
-    int chunkSizeZ = CHUNK.Size.z;
+    int chunkTileCountX = CHUNK.tileCount.x;
+    int chunkTileCountY = CHUNK.tileCount.y;
+    int chunkTileCountZ = CHUNK.tileCount.z;
 
     float discreteHeightStep = 1f; //-1 for continuous 
 
@@ -27,8 +28,9 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
     //[(0,1) (1,1) (2,1)]
     //[(0,0) (1,0) (2,0)]
     MapChunk[,] chunks; //currently loaded chunks
-
     MeshList<MapChunk> chunkStorage;
+
+    PlanetData planetData;
 
     void Start()
     {
@@ -37,7 +39,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
 
     void FixedUpdate()
     {
-        UpdateMap();
+        //UpdateMap();
 
         if (Input.GetKeyUp(KeyCode.Space))
         {
@@ -60,56 +62,48 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
     {
         seed = UTIL.GetMapSeed();
 
-        ETerrain[,] terrain = new ETerrain[3, 3];
+        planetData = PlanetData.GetRandomPlanetData();
+
+        TERRAIN.ETerrain[,] terrain = new TERRAIN.ETerrain[3, 3];
 
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
-                terrain[i, j] = TERRAIN.GetRandomTerrainByFrequency();
+                terrain[i, j] = TerrainData.GetRandomTerrainByFrequency();
 
         //terrain[0, 0] = ETerrain.EMountains;
         //terrain[1, 0] = ETerrain.EMountains;
         //terrain[2, 0] = ETerrain.EMountains;
 
         InstantiateChunks(terrain);
+
+        waterLevel.transform.position = new Vector3(currentCenter.x, planetData.GetSeaLevel() * discreteHeightStep, currentCenter.z);
     }
 
-    private void InstantiateChunks(Meta_MapGenerator.ETerrain[,] _startTerrain)
+    private void InstantiateChunks(Meta_MapGenerator.TERRAIN.ETerrain[,] _startTerrain)
     {
         chunks = new MapChunk[3, 3];
         chunkStorage = new MeshList<MapChunk>();
 
         chunks[0, 0] = gameObject.AddComponent<MapChunk>();
-        chunks[0, 0].InitChunk(_startTerrain[0, 0], StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, -chunkSizeZ), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+        chunks[0, 0].InitChunk(_startTerrain[0, 0], StaticMaths.MultiplyVector3D(new Vector3(-chunkTileCountX, 0, -chunkTileCountZ), TILES.Offset), chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
         chunks[1, 0] = gameObject.AddComponent<MapChunk>();
-        chunks[1, 0].InitChunk(_startTerrain[1, 0], StaticMaths.MultiplyVector3D(new Vector3(0, 0, -chunkSizeZ), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+        chunks[1, 0].InitChunk(_startTerrain[1, 0], StaticMaths.MultiplyVector3D(new Vector3(0, 0, -chunkTileCountZ), TILES.Offset), chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
         chunks[2, 0] = gameObject.AddComponent<MapChunk>();
-        chunks[2, 0].InitChunk(_startTerrain[2, 0], StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, -chunkSizeZ), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+        chunks[2, 0].InitChunk(_startTerrain[2, 0], StaticMaths.MultiplyVector3D(new Vector3(chunkTileCountX, 0, -chunkTileCountZ), TILES.Offset), chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
 
         chunks[0, 1] = gameObject.AddComponent<MapChunk>();
-        chunks[0, 1].InitChunk(_startTerrain[0, 1], StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, 0), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+        chunks[0, 1].InitChunk(_startTerrain[0, 1], StaticMaths.MultiplyVector3D(new Vector3(-chunkTileCountX, 0, 0), TILES.Offset), chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
         chunks[1, 1] = gameObject.AddComponent<MapChunk>();
-        chunks[1, 1].InitChunk(_startTerrain[1, 1], StaticMaths.MultiplyVector3D(new Vector3(0, 0, 0), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+        chunks[1, 1].InitChunk(_startTerrain[1, 1], StaticMaths.MultiplyVector3D(new Vector3(0, 0, 0), TILES.Offset), chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
         chunks[2, 1] = gameObject.AddComponent<MapChunk>();
-        chunks[2, 1].InitChunk(_startTerrain[2, 1], StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, 0), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+        chunks[2, 1].InitChunk(_startTerrain[2, 1], StaticMaths.MultiplyVector3D(new Vector3(chunkTileCountX, 0, 0), TILES.Offset), chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
 
         chunks[0, 2] = gameObject.AddComponent<MapChunk>();
-        chunks[0, 2].InitChunk(_startTerrain[0, 2], StaticMaths.MultiplyVector3D(new Vector3(-chunkSizeX, 0, chunkSizeZ), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+        chunks[0, 2].InitChunk(_startTerrain[0, 2], StaticMaths.MultiplyVector3D(new Vector3(-chunkTileCountX, 0, chunkTileCountZ), TILES.Offset), chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
         chunks[1, 2] = gameObject.AddComponent<MapChunk>();
-        chunks[1, 2].InitChunk(_startTerrain[1, 2], StaticMaths.MultiplyVector3D(new Vector3(0, 0, chunkSizeZ), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+        chunks[1, 2].InitChunk(_startTerrain[1, 2], StaticMaths.MultiplyVector3D(new Vector3(0, 0, chunkTileCountZ), TILES.Offset), chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
         chunks[2, 2] = gameObject.AddComponent<MapChunk>();
-        chunks[2, 2].InitChunk(_startTerrain[2, 2], StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX, 0, chunkSizeZ), TILES.Offset), chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
-
-        /*chunkStorage.HardInsert(chunks[0, 0], new Vector2Int(-1, -1));
-        chunkStorage.HardInsert(chunks[1, 0], new Vector2Int(0, -1));
-        chunkStorage.HardInsert(chunks[2, 0], new Vector2Int(1, -1));
-
-        chunkStorage.HardInsert(chunks[0, 1], new Vector2Int(-1, 0));
-        chunkStorage.HardInsert(chunks[1, 1], new Vector2Int(0, 0));
-        chunkStorage.HardInsert(chunks[2, 1], new Vector2Int(1, 0));
-
-        chunkStorage.HardInsert(chunks[0, 2], new Vector2Int(-1, 1));
-        chunkStorage.HardInsert(chunks[1, 2], new Vector2Int(0, 1));
-        chunkStorage.HardInsert(chunks[2, 2], new Vector2Int(1, 1));*/
+        chunks[2, 2].InitChunk(_startTerrain[2, 2], StaticMaths.MultiplyVector3D(new Vector3(chunkTileCountX, 0, chunkTileCountZ), TILES.Offset), chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
 
         //middle row
         chunkStorage.SetCenter(chunks[1, 1]);
@@ -145,9 +139,6 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
         //Vector2 playerChunkIndex = GetCorrespondingChunkIndex(cameraPos);
         UTIL.EPosition playerPosition = GetCameraPosition(cameraPos);
 
-        //if (playerChunkIndex.x == 1 && playerChunkIndex.y == 1)
-        //    return;
-
         RearrangeChunksAroundCenter(playerPosition);
     }
 
@@ -159,7 +150,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
 
         if (StaticMaths.WithinBoundingBox(pos2D,
             StaticMaths.ThreeDTo2D(chunks[1, 1].GetCenter(), StaticMaths.EPlane.E_XZ),
-            new Vector2(chunkSizeX * TILES.Offset.x, chunkSizeZ * TILES.Offset.z) + StaticMaths.ThreeDTo2D(TILES.Offset, StaticMaths.EPlane.E_XZ) * 2))
+            new Vector2(chunkTileCountX * TILES.Offset.x, chunkTileCountZ * TILES.Offset.z) + StaticMaths.ThreeDTo2D(TILES.Offset, StaticMaths.EPlane.E_XZ) * 2))
         {
             pos = UTIL.EPosition.ECenter;
         }
@@ -182,8 +173,6 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
                 pos = UTIL.EPosition.ERight;
             }
         }
-        //if (pos != UTIL.EPosition.ECenter)
-            //Debug.Log(pos + " for camera=" + pos2D + " and center=" + chunks[1, 1].GetCenter());
 
         return pos;
     }
@@ -218,6 +207,8 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
             //MoveChunksLeft(true);
             MoveLoadedSectionRight();
         }
+
+        waterLevel.transform.position = new Vector3(currentCenter.x, waterLevel.transform.position.y, currentCenter.z);
     }
 
     /*
@@ -276,22 +267,18 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
         {
             if (chunks[i, row] == null)
             {
-                //Debug.Log("trying to generate " + i + "," + row);
                 chunks[i, row] = gameObject.AddComponent<MapChunk>();
-                chunks[i, row].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX * (i - 1), 0, chunkSizeZ * (row - 1)), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+                chunks[i, row].InitChunk(TerrainData.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkTileCountX * (i - 1), 0, chunkTileCountZ * (row - 1)), TILES.Offset) + currentCenter, chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
                 if(_up)
                     chunkStorage.AddAbove(currentStoragePosition.x + (i - 1), currentStoragePosition.y, chunks[i, row]);
                     //chunkStorage.HardInsert(chunks[i, row], new Vector2Int(currentStoragePosition.x + (i - 1), currentStoragePosition.y + 1));
                 else
-                    chunkStorage.AddAbelow(currentStoragePosition.x + (i - 1), currentStoragePosition.y, chunks[i, row]);
+                    chunkStorage.AddBelow(currentStoragePosition.x + (i - 1), currentStoragePosition.y, chunks[i, row]);
                     //chunkStorage.HardInsert(chunks[i, row], new Vector2Int(currentStoragePosition.x + (i - 1), currentStoragePosition.y - 1));
             }
         }
         for (int i = 0; i < 3; i++)
         {
-            //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-            //Debug.Log("generating map for " + i + "," + row);
-            //Debug.Log("chunks at that position = " + chunks[i, row]);
             chunks[i, row].GenerateMap();
         }
     }
@@ -322,7 +309,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
             if (chunks[column, i] == null)
             {
                 chunks[column, i] = gameObject.AddComponent<MapChunk>();
-                chunks[column, i].InitChunk(TERRAIN.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkSizeX * (column - 1), 0, chunkSizeZ * (i - 1)), TILES.Offset) + currentCenter, chunkSizeX, chunkSizeY, chunkSizeZ, hexTilePrefab, this);
+                chunks[column, i].InitChunk(TerrainData.GetRandomTerrainByFrequency(), StaticMaths.MultiplyVector3D(new Vector3(chunkTileCountX * (column - 1), 0, chunkTileCountZ * (i - 1)), TILES.Offset) + currentCenter, chunkTileCountX, chunkTileCountY, chunkTileCountZ, hexTilePrefab, this);
                 if(_right)
                     chunkStorage.AddRight(currentStoragePosition.x, currentStoragePosition.y + (i - 1), chunks[column, i]);
                     //chunkStorage.HardInsert(chunks[column, i], new Vector2Int(currentStoragePosition.x + 1, currentStoragePosition.y + (i - 1)));
@@ -341,7 +328,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
 
     private void ReloadChunkArrayFromStorage()
     {
-        chunks = chunkStorage.Get2DArray(new Vector2Int(currentStoragePosition.x - 1, currentStoragePosition.y - 1), new Vector2Int(3, 3));
+        chunks = chunkStorage.Get2DArray(currentStoragePosition.x - 1, currentStoragePosition.y - 1, 3, 3);
     }
 
     public MapChunk[,] GetChunks()
@@ -357,5 +344,15 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
     public string GetSeed()
     {
         return seed;
+    }
+
+    public PlanetData GetPlanetData()
+    {
+        return planetData;
+    }
+
+    public float GetSeaLevel()
+    {
+        return planetData.GetSeaLevel() * discreteHeightStep;
     }
 }

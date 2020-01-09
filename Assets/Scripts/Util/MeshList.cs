@@ -25,20 +25,11 @@ public class MeshList<T>
 
         Element<T> currentElement = centerElement;
         if (centerElement == null)
-            return default(T);
+            return null;
 
-        Element<T> t = currentElement.GetAbove();
-        if (t != null)
-            queue.Add(t);
-        t = currentElement.GetBelow();
-        if (t != null)
-            queue.Add(t);
-        t = currentElement.GetRight();
-        if (t != null)
-            queue.Add(t);
-        t = currentElement.GetLeft();
-        if (t != null)
-            queue.Add(t);
+        queue.Add(currentElement);
+
+        Element<T> t;
 
         while (queue.Count != 0)
         {
@@ -48,12 +39,12 @@ public class MeshList<T>
             //set its marker
             currentElement.SetMarker(true);
 
-            Tuple<int, int> coord = currentElement.GetCoordinate();
+            System.Tuple<int, int> coord = currentElement.GetCoordinate();
 
-            if (coord.Item1 = _x && coord.Item2 = _y)
+            if (coord.Item1 == _x && coord.Item2 == _y)
             {
                 SetAllMarkers(false);
-                return currentElement.GetValue();
+                return currentElement;
             }             
 
             //get all neghbouring elements and add them to the queue
@@ -72,7 +63,7 @@ public class MeshList<T>
         }
 
         SetAllMarkers(false);
-        return default(T);
+        return null;
     }
 
     public T GetAt(int _x, int _y)
@@ -97,6 +88,9 @@ public class MeshList<T>
     public void AddAbove(int _x, int _y, T _element)
     {
         Element<T> rootElement = GetElementAt(_x, _y, true); //if the element at the given index doesn't exist, the method will stop here
+
+        if (rootElement == null)
+            ThrowElementNotFoundAtIndex(_x, _y);
 
         if (rootElement.GetAbove() != null)
             ThrowSpaceTaken(_x, _y + 1, "Can't add above " + FormatCoordinates(_x, _y) + ".");
@@ -151,6 +145,9 @@ public class MeshList<T>
     {
         Element<T> rootElement = GetElementAt(_x, _y, true); //if the element at the given index doesn't exist, the method will stop here
 
+        if (rootElement == null)
+            ThrowElementNotFoundAtIndex(_x, _y);
+
         if (rootElement.GetBelow() != null)
             ThrowSpaceTaken(_x, _y - 1, "Can't add below " + FormatCoordinates(_x, _y) + ".");
 
@@ -201,10 +198,10 @@ public class MeshList<T>
 
     public void AddRight(int _x, int _y, T _element)
     {
-        if(_x == 1 && _y == -1)
-            Debug.Log("Adding at " + (_x + 1) + "," + _y);
-
         Element<T> rootElement = GetElementAt(_x, _y, true); //if the element at the given index doesn't exist, the method will stop here
+
+        if(rootElement == null)
+            ThrowElementNotFoundAtIndex(_x, _y);
 
         if (rootElement.GetRight() != null)
             ThrowSpaceTaken(_x + 1, _y, "Can't add right to " + FormatCoordinates(_x, _y) + ".");
@@ -236,12 +233,6 @@ public class MeshList<T>
         Element<T> newElement = new Element<T>(_element, _x + 1, _y);
         rootElement.SetRight(newElement);
         newElement.SetLeft(rootElement);
-        if (_x == 1 && _y == -1)
-        {
-            Debug.Log("the root : " + rootElement + " with index of " + rootElement.GetCoordinate());
-            Debug.Log("root right neighbour : " + rootElement.GetRight() + " with index of " + rootElement.GetRight().GetCoordinate());
-            Debug.Log("created element : " + newElement + " with index of " + newElement.GetCoordinate());
-        }
         //And we also got to mind the other 3 potential neighbours of our new element
         if (surBelow != null)
         {
@@ -263,6 +254,9 @@ public class MeshList<T>
     public void AddLeft(int _x, int _y, T _element)
     {
         Element<T> rootElement = GetElementAt(_x, _y, true); //if the element at the given index doesn't exist, the method will stop here
+
+        if (rootElement == null)
+            ThrowElementNotFoundAtIndex(_x, _y);
 
         if (rootElement.GetLeft() != null)
             ThrowSpaceTaken(_x - 1, _y, "1 Can't add left to " + FormatCoordinates(_x, _y) + ".");
@@ -347,18 +341,9 @@ public class MeshList<T>
         if (centerElement == null)
             return null;
 
-        Element<T> t = currentElement.GetAbove();
-        if (t != null)
-            queue.Add(t);
-        t = currentElement.GetBelow();
-        if (t != null)
-            queue.Add(t);
-        t = currentElement.GetRight();
-        if (t != null)
-            queue.Add(t);
-        t = currentElement.GetLeft();
-        if (t != null)
-            queue.Add(t);
+        queue.Add(currentElement);
+
+        Element<T> t;
 
         while (queue.Count != 0)
         {
@@ -401,19 +386,9 @@ public class MeshList<T>
         if (centerElement == null)
             return;
 
-        Element<T> t = currentElement.GetAbove();
-        if (t != null)
-            queue.Add(t);
-        t = currentElement.GetBelow();
-        if (t != null)
-            queue.Add(t);
-        t = currentElement.GetRight();
-        if (t != null)
-            queue.Add(t);
-        t = currentElement.GetLeft();
-        if (t != null)
-            queue.Add(t);
+        queue.Add(currentElement);
 
+        Element<T> t;
         while (queue.Count != 0)
         {
             //get current element and remove it from the queue

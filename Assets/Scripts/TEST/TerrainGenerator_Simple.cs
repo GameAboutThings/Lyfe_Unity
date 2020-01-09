@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class TerrainGenerator_Simple
 {
-    private float heightCap = Meta_MapGenerator.CHUNK.Size.y; //deviance from absolute 0
+    private float heightCap = Meta_MapGenerator.CHUNK.tileCount.y; //deviance from absolute 0
     private float smoothness = 5;
     private float spacingX = 1f;
     private float spacingZ = 1f;

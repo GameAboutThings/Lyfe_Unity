@@ -462,7 +462,7 @@ Transform:
   m_GameObject: {fileID: 567712794}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 9.16, y: 0, z: 8.1}
-  m_LocalScale: {x: 15.8, y: 1, z: 13.5}
+  m_LocalScale: {x: 19, y: 1, z: 15}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 3
@@ -499,6 +499,7 @@ MonoBehaviour:
   hexTilePrefab: {fileID: 6591953363502009361, guid: 9bd5d637e3ef142419a0bed6e3f59726,
     type: 3}
   playerCamera: {fileID: 143307859}
+  waterLevel: {fileID: 567712794}
   seed: 
 --- !u!4 &1639157559
 Transform:

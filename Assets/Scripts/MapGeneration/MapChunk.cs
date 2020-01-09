@@ -3,25 +3,22 @@ using System.Collections.Generic;
 using UnityEngine;
 using Meta_MapGenerator;
 
-public class MapChunk : MonoBehaviour
+public class MapChunk : ChunkTemplate
 {
     private GameObject hexTilePrefab;
 
     HexTileMapGenerator_V2 mapGenerator;
 
     Vector3[,] heightMap;
-    ETerrain terrain;
-    TERRAIN terrainData;
+    TERRAIN.ETerrain terrain; // remove
+    TerrainData terrainData; // remove
+    PlanetData planetData;
 
     List<GameObject> tiles;
 
-    Color color;
-
-    Vector3 center;
-
-    int chunkSizeX = 50;
-    int chunkSizeY = 50;
-    int chunkSizeZ = 50;
+    int tileCountX = 50;
+    int tileCountY = 50;
+    int tileCountZ = 50;
 
     private float spacingX = 1f;
     private float spacingZ = 1f;
@@ -29,71 +26,18 @@ public class MapChunk : MonoBehaviour
 
     private Vector2 seedOffset;
 
-    MapChunk above;
-    MapChunk below;
-    MapChunk right;
-    MapChunk left;
-
-    public void InitChunk(ETerrain _terrain, Vector3 _center, int _chunkSizeX, int _chunkSizeY, int _chunkSizeZ, GameObject _hexTilePrefab, HexTileMapGenerator_V2 _mapGenerator)
+    public void InitChunk(TERRAIN.ETerrain _terrain, Vector3 _center, int _tileCountX, int _tileCountY, int _tileCountZ, GameObject _hexTilePrefab, HexTileMapGenerator_V2 _mapGenerator)
     {
         terrain = _terrain;
-        terrainData = TERRAIN.GetTerrainData(terrain);
+        terrainData = TerrainData.GetTerrainData(terrain);
         center = _center;
-        chunkSizeX = _chunkSizeX;
-        chunkSizeY = _chunkSizeY;
-        chunkSizeZ = _chunkSizeZ;
+        tileCountX = _tileCountX;
+        tileCountY = _tileCountY;
+        tileCountZ = _tileCountZ;
         hexTilePrefab = _hexTilePrefab;
         mapGenerator = _mapGenerator;
         seedOffset = UTIL.GetSeedVectorFromString(mapGenerator.GetSeed());
-
-        color = terrainData.GetColor();
-    }
-
-    public void SetNeighbourChunk(MapChunk _chunk, UTIL.EPosition _ePosition)
-    {
-        switch (_ePosition)
-        {
-            case UTIL.EPosition.EAbove:
-                if (above != null)
-                    return;
-                above = _chunk;
-                above.SetNeighbourChunk(this, UTIL.EPosition.EBelow);
-                break;
-            case UTIL.EPosition.EBelow:
-                if (below != null)
-                    return;
-                below = _chunk;
-                below.SetNeighbourChunk(this, UTIL.EPosition.EAbove);
-                break;
-            case UTIL.EPosition.ERight:
-                if (right != null)
-                    return;
-                right = _chunk;
-                right.SetNeighbourChunk(this, UTIL.EPosition.ELeft);
-                break;
-            case UTIL.EPosition.ELeft:
-                if (left != null)
-                    return;
-                left = _chunk;
-                left.SetNeighbourChunk(this, UTIL.EPosition.ERight);
-                break;
-        }
-    }
-
-    public MapChunk GetNeighbourChunk(UTIL.EPosition _ePosition)
-    {
-        switch (_ePosition)
-        {
-            case UTIL.EPosition.EAbove:
-                return above;
-            case UTIL.EPosition.EBelow:
-                return below;
-            case UTIL.EPosition.ERight:
-                return right;
-            case UTIL.EPosition.ELeft:
-                return left;
-        }
-        return null;
+        planetData = _mapGenerator.GetPlanetData();
     }
 
     public void GenerateMap()
@@ -104,9 +48,9 @@ public class MapChunk : MonoBehaviour
         if (tiles == null)
             tiles = new List<GameObject>();
 
-        for (int x = 0; x < chunkSizeX; x++)
+        for (int x = 0; x < tileCountX; x++)
         {
-            for (int z = 0; z < chunkSizeZ; z++)
+            for (int z = 0; z < tileCountZ; z++)
             {
                 Vector3 pos = heightMap[x, z];
 
@@ -118,15 +62,15 @@ public class MapChunk : MonoBehaviour
                 //move hex to its spot
                 if (z % 2 == 0)
                 {
-                    pos = new Vector3(pos.x * TILES.Offset.x - (0.5f * chunkSizeX),
+                    pos = new Vector3(pos.x * TILES.Offset.x - (0.5f * tileCountX),
                                     y, 
-                                    pos.z * TILES.Offset.z - (0.5f * chunkSizeZ));
+                                    pos.z * TILES.Offset.z - (0.5f * tileCountZ));
                 }
                 else
                 {
-                    pos = new Vector3(pos.x * TILES.Offset.x + (TILES.Offset.x / 2f) - (0.5f * chunkSizeX), 
+                    pos = new Vector3(pos.x * TILES.Offset.x + (TILES.Offset.x / 2f) - (0.5f * tileCountX), 
                                     y, 
-                                    pos.z * TILES.Offset.z - (0.5f * chunkSizeZ));
+                                    pos.z * TILES.Offset.z - (0.5f * tileCountZ));
                 }
 
                 GameObject tile = Instantiate(hexTilePrefab, pos, Quaternion.identity);
@@ -143,11 +87,6 @@ public class MapChunk : MonoBehaviour
         _tile.transform.parent = transform;
     }
 
-    public Vector3 GetCenter()
-    {
-        return center;
-    }
-
     public void Clear()
     {
         if (tiles == null)
@@ -162,16 +101,16 @@ public class MapChunk : MonoBehaviour
 
     private Color CalculateTileColor(Vector3 _tilePosition)
     {
-        Color belowZero = new Color(204f/255f, 102f/255f, 0f);
-        Color zero = new Color(51f/255f, 102f/255f, 0f);
-        Color levelOne = new Color(170f / 255f, 170f / 255f, 170f / 255f);
-        Color levelTwo = new Color(0.9f, 0.9f, 0.9f);
+        Color belowZero = planetData.GetColorBelowZero();
+        Color zero = planetData.GetColorZero();
+        Color levelOne = planetData.GetColorLevelOne();
+        Color levelTwo = planetData.GetColorLevelTwo();
 
         float[] distances = new float[] {
-            Mathf.Abs(_tilePosition.y - (-7f)),
-            Mathf.Abs(_tilePosition.y - (0f)),
-            Mathf.Abs(_tilePosition.y - (7f)),
-            Mathf.Abs(_tilePosition.y - (12f))
+            Mathf.Abs(_tilePosition.y - (-7f + mapGenerator.GetSeaLevel())),
+            Mathf.Abs(_tilePosition.y - (0f + mapGenerator.GetSeaLevel())),
+            Mathf.Abs(_tilePosition.y - (7f + mapGenerator.GetSeaLevel())),
+            Mathf.Abs(_tilePosition.y - (12f + mapGenerator.GetSeaLevel()))
         };
 
         Color averageColor = new Color(
@@ -182,30 +121,6 @@ public class MapChunk : MonoBehaviour
             //third component (BLUE)
             CalculateWeightedValue(new float[] { belowZero.b, zero.b, levelOne.b, levelTwo.b }, distances)
             );
-
-        //Vector2 pos2D = StaticMaths.ThreeDTo2D(_tilePosition, StaticMaths.EPlane.E_XZ);
-
-        //MapChunk[,] chunks = mapGenerator.GetChunks();
-        //Color c00 = chunks[0, 0].GetColor();
-        //Color c10 = chunks[1, 0].GetColor();
-        //Color c20 = chunks[2, 0].GetColor();
-        //Color c01 = chunks[0, 1].GetColor();
-        //Color c11 = chunks[1, 1].GetColor();
-        //Color c21 = chunks[2, 1].GetColor();
-        //Color c02 = chunks[0, 2].GetColor();
-        //Color c12 = chunks[1, 2].GetColor();
-        //Color c22 = chunks[2, 2].GetColor();
-
-        //float[] distances = GetDistancesToChunkCenters(pos2D);
-
-        //Color averageColor = new Color(
-        //    //first component (RED)
-        //    CalculateWeightedValue(new float[] {c00.r, c10.r, c20.r, c01.r, c11.r, c21.r, c02.r, c12.r, c22.r}, distances),
-        //    //second component (GREEN)
-        //    CalculateWeightedValue(new float[] {c00.g, c10.g, c20.g, c01.g, c11.g, c21.g, c02.g, c12.g, c22.g}, distances),
-        //    //third component (BLUE)
-        //    CalculateWeightedValue(new float[] {c00.b, c10.b, c20.b, c01.b, c11.b, c21.b, c02.b, c12.b, c22.b}, distances)
-        //    );
 
         return averageColor;
     }
@@ -283,7 +198,7 @@ public class MapChunk : MonoBehaviour
     {
         float summands = 0;
         float sumDistances = 0;
-        float diagonal = Mathf.Sqrt(Mathf.Pow(CHUNK.Size.x * TILES.Offset.x, 2) + Mathf.Pow(CHUNK.Size.y * TILES.Offset.y, 2));
+        float diagonal = Mathf.Sqrt(Mathf.Pow(CHUNK.tileCount.x * TILES.Offset.x, 2) + Mathf.Pow(CHUNK.tileCount.y * TILES.Offset.y, 2));
         float maxDistance = (5f / 2f) * diagonal;
         int maxWeight = 50;
 
@@ -328,8 +243,8 @@ public class MapChunk : MonoBehaviour
         float y = StaticMaths.Cap(
             Mathf.PerlinNoise(_x * granularity + seedOffset.x, _z * granularity + seedOffset.y) * 10f / CalculateTileSmoothness(pos)
                 + CalculateTileHeight(pos), 
-            -chunkSizeY, 
-            chunkSizeY);
+            -tileCountY,
+            tileCountY);
 
         float heightStep = mapGenerator.GetDiscreteHeightStep();
 
@@ -341,20 +256,15 @@ public class MapChunk : MonoBehaviour
         return new Vector3(pos.x, y, pos.z);
     }
 
-    public Color GetColor()
-    {
-        return color;
-    }
-
     public Vector3[,] GenerateComplexHeightMap()
     {
         Vector3 centerTemp = StaticMaths.DivideVector3D(center, TILES.Offset);
 
-        Vector3[,] heightMap = new Vector3[chunkSizeX + 1, chunkSizeZ + 1];
+        Vector3[,] heightMap = new Vector3[tileCountX + 1, tileCountZ + 1];
 
-        for (int z = 0; z <= chunkSizeZ; z++)
+        for (int z = 0; z <= tileCountZ; z++)
         {
-            for (int x = 0; x <= chunkSizeX; x++)
+            for (int x = 0; x <= tileCountX; x++)
             {
                 heightMap[x, z] = GetHeightAt(x + centerTemp.x, z + centerTemp.z);
             }
@@ -363,12 +273,12 @@ public class MapChunk : MonoBehaviour
         return heightMap;
     }
 
-    public TERRAIN GetTerrainData()
+    public TerrainData GetTerrainData() //remove
     {
         return terrainData;
     }
 
-    public ETerrain GetTerrain()
+    public TERRAIN.ETerrain GetTerrain() //remove
     {
         return terrain;
     }
