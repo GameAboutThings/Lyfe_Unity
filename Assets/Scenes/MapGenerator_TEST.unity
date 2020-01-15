@@ -462,7 +462,7 @@ Transform:
   m_GameObject: {fileID: 567712794}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 9.16, y: 0, z: 8.1}
-  m_LocalScale: {x: 19, y: 1, z: 15}
+  m_LocalScale: {x: 21, y: 1, z: 20}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 3
@@ -477,6 +477,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1639157559}
   - component: {fileID: 1639157558}
+  - component: {fileID: 1639157560}
   m_Layer: 0
   m_Name: TileGenerator_TEST
   m_TagString: Untagged
@@ -496,11 +497,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92537c88f9ba2d34cb2c8a67c973e8e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hexTilePrefab: {fileID: 6591953363502009361, guid: 9bd5d637e3ef142419a0bed6e3f59726,
-    type: 3}
   playerCamera: {fileID: 143307859}
   waterLevel: {fileID: 567712794}
-  seed: 
+  mapPrefab: {fileID: 6775461802887601551, guid: f67311d3aaa2de74c92f7af0263cb863,
+    type: 3}
 --- !u!4 &1639157559
 Transform:
   m_ObjectHideFlags: 0
@@ -515,3 +515,17 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1639157560
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1639157557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3028b1cbdb27e224c97fdf566731e7bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  instrumentPrefab: {fileID: 3130097536593791580, guid: 4d7636878604ccc45b346b7034a7ea2c,
+    type: 3}

@@ -422,13 +422,14 @@ public class MeshList<T>
     public T[,] Get2DArray(int _x, int _y, int _width, int _height)
     {
         T[,] ret = new T[_width, _height];
-
+        Element<T> t;
         for (int i = 0; i < _width; i++)
         {
             for (int j = 0; j < _height; j++)
             {
-                Element<T> t = GetElementAt(_x + i, _y + j, false);
-                if(t != null)
+                
+                t = GetElementAt(_x + i, _y + j, false);
+                if (t != null)
                     ret[i, j] = t.GetValue();
             }
         }

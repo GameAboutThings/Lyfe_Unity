@@ -5,14 +5,11 @@ using Meta_MapGenerator;
 
 public class MapChunk : ChunkTemplate
 {
-    private GameObject hexTilePrefab;
+    Map map;
+    Vector3[,] heightMap;
+    List<GameObject> tiles;
 
     HexTileMapGenerator_V2 mapGenerator;
-
-    Vector3[,] heightMap;
-    PlanetData planetData;
-
-    List<GameObject> tiles;
 
     int tileCountX = 50;
     int tileCountY = 50;
@@ -21,25 +18,28 @@ public class MapChunk : ChunkTemplate
     private float spacingX = 1f;
     private float spacingZ = 1f;
     private float granularity = .2f;
-
     private Vector2 seedOffset;
 
-    public MapChunk(Vector3 _center, int _tileCountX, int _tileCountY, int _tileCountZ, GameObject _hexTilePrefab, HexTileMapGenerator_V2 _mapGenerator)
+    PlanetData planetData;
+
+    Vector3 actualCenter;
+
+    public MapChunk(Map _map, Vector3 _center, int _tileCountX, int _tileCountY, int _tileCountZ)
     {
+        map = _map;
         center = _center;
         tileCountX = _tileCountX;
         tileCountY = _tileCountY;
         tileCountZ = _tileCountZ;
-        hexTilePrefab = _hexTilePrefab;
-        mapGenerator = _mapGenerator;
-        seedOffset = UTIL.GetSeedVectorFromString(mapGenerator.GetSeed());
-        planetData = _mapGenerator.GetPlanetData();
+
+        planetData = _map.GetPlanetData();
+        mapGenerator = _map.GetMapGenerator();
+        seedOffset = mapGenerator.GetSeed().GetWorldOffset();
     }
 
     public void GenerateMap()
     {
-        if (heightMap == null)
-            heightMap = GenerateComplexHeightMap();
+        heightMap = GenerateComplexHeightMap();
 
         if (tiles == null)
             tiles = new List<GameObject>();
@@ -59,17 +59,20 @@ public class MapChunk : ChunkTemplate
                 if (z % 2 == 0)
                 {
                     pos = new Vector3(pos.x * TILES.Offset.x - (0.5f * tileCountX),
-                                    y, 
+                                    y,
                                     pos.z * TILES.Offset.z - (0.5f * tileCountZ));
                 }
                 else
                 {
-                    pos = new Vector3(pos.x * TILES.Offset.x + (TILES.Offset.x / 2f) - (0.5f * tileCountX), 
-                                    y, 
+                    pos = new Vector3(pos.x * TILES.Offset.x + (TILES.Offset.x / 2f) - (0.5f * tileCountX),
+                                    y,
                                     pos.z * TILES.Offset.z - (0.5f * tileCountZ));
                 }
 
-                GameObject tile = mapGenerator.SetTile(pos);
+                if (x == tileCountX / 2 && z == tileCountZ / 2)
+                    actualCenter = new Vector3(pos.x, 0, pos.z);
+
+                GameObject tile = map.SetTile(pos);
                 tiles.Add(tile);
                 SetTileInfo(tile, x, z);
             }
@@ -125,15 +128,6 @@ public class MapChunk : ChunkTemplate
         Vector2 pos2D = StaticMaths.ThreeDTo2D(_tilePosition, StaticMaths.EPlane.E_XZ);
 
         TerrainChunk[,] chunks = mapGenerator.GetTerrainChunks();
-        //float s00 = chunks[0, 0].terrainData.GetSmoothness();
-        //float s10 = chunks[1, 0].terrainData.GetSmoothness();
-        //float s20 = chunks[2, 0].terrainData.GetSmoothness();
-        //float s01 = chunks[0, 1].terrainData.GetSmoothness();
-        //float s11 = chunks[1, 1].terrainData.GetSmoothness();
-        //float s21 = chunks[2, 1].terrainData.GetSmoothness();
-        //float s02 = chunks[0, 2].terrainData.GetSmoothness();
-        //float s12 = chunks[1, 2].terrainData.GetSmoothness();
-        //float s22 = chunks[2, 2].terrainData.GetSmoothness();
 
         int dim = mapGenerator.GetTerrainDimension();
 
@@ -149,7 +143,7 @@ public class MapChunk : ChunkTemplate
 
         float smoothness = CalculateWeightedValue(/*new float[] { s00, s10, s20, s01, s11, s12, s20, s21, s22 }*/smoothnesses, GetDistancesToChunkCenters(pos2D));
 
-        return  smoothness;
+        return smoothness;
     }
 
     private float CalculateTileHeight(Vector3 _tilePosition)
@@ -157,15 +151,6 @@ public class MapChunk : ChunkTemplate
         Vector2 pos2D = StaticMaths.ThreeDTo2D(_tilePosition, StaticMaths.EPlane.E_XZ);
 
         TerrainChunk[,] chunks = mapGenerator.GetTerrainChunks();
-        //float h00 = chunks[0, 0].GetTerrainData().GetHeight();
-        //float h10 = chunks[1, 0].GetTerrainData().GetHeight();
-        //float h20 = chunks[2, 0].GetTerrainData().GetHeight();
-        //float h01 = chunks[0, 1].GetTerrainData().GetHeight();
-        //float h11 = chunks[1, 1].GetTerrainData().GetHeight();
-        //float h21 = chunks[2, 1].GetTerrainData().GetHeight();
-        //float h02 = chunks[0, 2].GetTerrainData().GetHeight();
-        //float h12 = chunks[1, 2].GetTerrainData().GetHeight();
-        //float h22 = chunks[2, 2].GetTerrainData().GetHeight();
 
         int dim = mapGenerator.GetTerrainDimension();
 
@@ -190,26 +175,6 @@ public class MapChunk : ChunkTemplate
 
         TerrainChunk[,] chunks = mapGenerator.GetTerrainChunks();
 
-        //Vector2 cen00 = StaticMaths.ThreeDTo2D(chunks[0, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
-        //Vector2 cen10 = StaticMaths.ThreeDTo2D(chunks[1, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
-        //Vector2 cen20 = StaticMaths.ThreeDTo2D(chunks[2, 0].GetCenter(), StaticMaths.EPlane.E_XZ);
-        //Vector2 cen01 = StaticMaths.ThreeDTo2D(chunks[0, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
-        //Vector2 cen11 = StaticMaths.ThreeDTo2D(chunks[1, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
-        //Vector2 cen21 = StaticMaths.ThreeDTo2D(chunks[2, 1].GetCenter(), StaticMaths.EPlane.E_XZ);
-        //Vector2 cen02 = StaticMaths.ThreeDTo2D(chunks[0, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
-        //Vector2 cen12 = StaticMaths.ThreeDTo2D(chunks[1, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
-        //Vector2 cen22 = StaticMaths.ThreeDTo2D(chunks[2, 2].GetCenter(), StaticMaths.EPlane.E_XZ);
-
-        //float d00 = StaticMaths.Distance2D(pos2D, cen00);
-        //float d10 = StaticMaths.Distance2D(pos2D, cen10);
-        //float d20 = StaticMaths.Distance2D(pos2D, cen20);
-        //float d01 = StaticMaths.Distance2D(pos2D, cen01);
-        //float d11 = StaticMaths.Distance2D(pos2D, cen11);
-        //float d21 = StaticMaths.Distance2D(pos2D, cen21);
-        //float d02 = StaticMaths.Distance2D(pos2D, cen02);
-        //float d12 = StaticMaths.Distance2D(pos2D, cen12);
-        //float d22 = StaticMaths.Distance2D(pos2D, cen22);
-
         int dim = mapGenerator.GetTerrainDimension();
         float[] distances = new float[dim * dim];
 
@@ -228,14 +193,13 @@ public class MapChunk : ChunkTemplate
     {
         float summands = 0;
         float sumDistances = 0;
-        float diagonal = Mathf.Sqrt(Mathf.Pow(CHUNK.tileCount.x * TILES.Offset.x, 2) + Mathf.Pow(CHUNK.tileCount.y * TILES.Offset.y, 2));
-        float maxDistance = (2.5f) * diagonal;
-        int maxWeight = 50;
+        float maxDistance = 3 * (map.GetMapGenerator().GetPlanetData().GetTerrainSize().x + map.GetMapGenerator().GetPlanetData().GetTerrainSize().y) / 2f;
+        int maxWeight = TERRAIN.maxWeight;
 
 
-        for(int i = 0 ; i < _values.Length; i++)
+        for (int i = 0; i < _values.Length; i++)
         {
-            for (int j = 1; j <= maxWeight; j++)
+            for (int j = 1; j <= maxWeight; j = j + 1)
             {
                 if (_distances[i] <= (maxDistance / (float)j))
                 {
@@ -249,7 +213,7 @@ public class MapChunk : ChunkTemplate
 
         float value = 0;
 
-        for(int i = 0 ; i < _values.Length; i++)
+        for (int i = 0; i < _values.Length; i++)
         {
             for (int j = 1; j < maxWeight; j++)
             {
@@ -267,12 +231,12 @@ public class MapChunk : ChunkTemplate
         return value;
     }
 
-    public Vector3 GetHeightAt(float _x, float _z)
+    private Vector3 GetHeightAt(float _x, float _z)
     {
         Vector3 pos = new Vector3(_x * spacingX, 0, _z * spacingZ);
         float y = StaticMaths.Cap(
             Mathf.PerlinNoise(_x * granularity + seedOffset.x, _z * granularity + seedOffset.y) * 10f / CalculateTileSmoothness(pos)
-                + CalculateTileHeight(pos), 
+                + CalculateTileHeight(pos),
             -tileCountY,
             tileCountY);
 
@@ -286,7 +250,7 @@ public class MapChunk : ChunkTemplate
         return new Vector3(pos.x, y, pos.z);
     }
 
-    public Vector3[,] GenerateComplexHeightMap()
+    private Vector3[,] GenerateComplexHeightMap()
     {
         Vector3 centerTemp = StaticMaths.DivideVector3D(center, TILES.Offset);
 
@@ -301,5 +265,15 @@ public class MapChunk : ChunkTemplate
         }
 
         return heightMap;
+    }
+
+    public Vector3 GetActualCenter()
+    {
+        return actualCenter;
+    }
+
+    public void SetCenter(Vector3 _position)
+    {
+        center = _position;
     }
 }

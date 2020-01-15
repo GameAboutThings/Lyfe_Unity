@@ -11,7 +11,8 @@ namespace Meta_MapGenerator
 
     class MISC
     {
-        public static int seedLength = 18;
+        public static int seedLength = 36;
+        public static int TerrainDimension = 7; //number of terrain chunks loaded at the same time; number needs to be odd so there can be a center
     }
 
     class TILES
@@ -19,9 +20,10 @@ namespace Meta_MapGenerator
         public static Vector3 Offset = new Vector3(1.73f, 1f, 1.5f);
     }
 
-    class CHUNK
+    class MAP
     {
-        public static Vector3Int tileCount = new Vector3Int(30, 70, 30);
+        public static Vector3Int tileCount = new Vector3Int(40, 70, 44);
+        public static int mapDimensions = 3; //number of terrain chunks loaded at the same time; number needs to be odd so there can be a center
     }
 
     public class TERRAIN
@@ -44,7 +46,9 @@ namespace Meta_MapGenerator
         public static float smoothnessVariance = 0.5f;
         public static float colorVariance = 0.3f;
 
-        public static Vector2 baseSize = new Vector2(CHUNK.tileCount.x * TILES.Offset.x, CHUNK.tileCount.z * TILES.Offset.z);
-        public static Vector2 sizeVariance = new Vector2(50f, 50f);
+        public static Vector2 baseSize = new Vector2(MAP.tileCount.x * TILES.Offset.x + 10f, MAP.tileCount.z * TILES.Offset.z + 10f);
+        public static Vector2 sizeVariance = new Vector2(10f, 10f);
+
+        public static int maxWeight = 75; //increasing this number makes the terrain type more pronounnced around the center of the terrain chunk
     }
 }
