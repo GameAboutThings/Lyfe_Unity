@@ -186,7 +186,7 @@ public class StaticMaths
      * 7,1   => 7 steps => 7
      * 1,0.3 => 3 steps => 0.9
      */
-    public static float Descretize(float _value, float _step)
+    public static float Discretize(float _value, float _step)
     {
         int x = (int)(_value / _step);
 

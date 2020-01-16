@@ -13,6 +13,13 @@ public class TerrainChunk : ChunkTemplate
 
     HexTileMapGenerator_V2 mapGenerator;
 
+    public struct TerrainChunkData
+    {
+        public Vector2 position;
+        public float smoothness;
+        public float height;      
+    }
+
     public TerrainChunk(TERRAIN.ETerrain _terrain, Vector3 _center, Vector2 _size, HexTileMapGenerator_V2 _mapGenerator)
     {
         terrain = _terrain;
@@ -30,5 +37,16 @@ public class TerrainChunk : ChunkTemplate
     public TERRAIN.ETerrain GetTerrain()
     {
         return terrain;
+    }
+
+    public TerrainChunkData GetData()
+    {
+        TerrainChunkData d = new TerrainChunkData();
+        d.height = terrainData.GetHeight();
+        d.position = StaticMaths.ThreeDTo2D(center, StaticMaths.EPlane.E_XZ);
+        d.smoothness = terrainData.GetSmoothness();
+
+        return d;
+
     }
 }

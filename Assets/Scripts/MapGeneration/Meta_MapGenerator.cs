@@ -46,7 +46,7 @@ namespace Meta_MapGenerator
         public static float smoothnessVariance = 0.5f;
         public static float colorVariance = 0.3f;
 
-        public static Vector2 baseSize = new Vector2(MAP.tileCount.x * TILES.Offset.x + 10f, MAP.tileCount.z * TILES.Offset.z + 10f);
+        public static Vector2 baseSize = new Vector2(MAP.tileCount.x * TILES.Offset.x + 50f, MAP.tileCount.z * TILES.Offset.z + 50f);
         public static Vector2 sizeVariance = new Vector2(10f, 10f);
 
         public static int maxWeight = 75; //increasing this number makes the terrain type more pronounnced around the center of the terrain chunk

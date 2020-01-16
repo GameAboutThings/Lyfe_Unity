@@ -1,0 +1,105 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+struct TerrainChunk {
+	float2 position;
+	float smoothness;
+	float height;
+};
+
+//++++++ OUTPUTS ++++++
+//Buffer for Height Output
+RWStructuredBuffer<float> output_smoothnesses;
+
+
+//++++++ INPUTS ++++++
+//Buffer for TilePositions
+RWStructuredBuffer<float2> tilePositions;
+//Buffer for ChunkPositions
+RWStructuredBuffer<TerrainChunk> chunks;
+
+float terrainDimension;
+float maxWeight;
+float maxDistance;
+float2 tileCounts;
+
+float CalculateWeightedValue(float _values[49], float _distances[49])
+{
+	float summands = 0;
+	float sumDistances = 0;
+
+	uint i = 0;
+	for (; i < 49; i++)
+	{
+		for (int j = 1; j <= maxWeight; j = j + 1)
+		{
+			if (_distances[i] <= (maxDistance / (float)j))
+			{
+				sumDistances += _distances[i];
+				summands++;
+			}
+			else
+				j = maxWeight + 2;
+		}
+	}
+
+	float value = 0;
+	i = 0;
+	for (; i < 49; i++)
+	{
+		for (int j = 1; j < maxWeight; j++)
+		{
+			if (_distances[i] <= (maxDistance / (float)j))
+			{
+				value += (_values[i] * (sumDistances - _distances[i]) / sumDistances);
+			}
+			else
+				j = maxWeight;
+		}
+	}
+
+	value /= summands;
+
+	return value;
+}
+
+float Distance2D(float2 _a, float2 _b)
+{
+	return abs(sqrt(pow(_a.x - _b.x, 2) + pow(_a.y - _b.y, 2)));
+}
+
+void CalculateDistances(out float distances[49], float2 _tilePosition)
+{
+	for (int x = 0; x < terrainDimension; x++)
+	{
+		for (int y = 0; y < terrainDimension; y++)
+		{
+			distances[y * terrainDimension + x] = Distance2D(_tilePosition, chunks[y * terrainDimension + x].position);
+		}
+	}
+}
+
+float CalculateTileSmoothness(float2 _tilePosition, float _distances[49])
+{
+	float smoothnesses[49];
+	for (int x = 0; x < terrainDimension; x++)
+	{
+		for (int y = 0; y < terrainDimension; y++)
+		{
+			smoothnesses[y * terrainDimension + x] = chunks[y * terrainDimension + x].smoothness;
+		}
+	}
+	float smoothness = CalculateWeightedValue(smoothnesses, _distances);
+
+	return smoothness;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+	uint2 tileIndex = id.xy;
+	float distances[49];
+	float2 tilePos = tilePositions[tileIndex.y * tileCounts.x + tileIndex.x];
+	CalculateDistances(distances, tilePos);
+	output_smoothnesses[tileIndex.y * tileCounts.x + tileIndex.x] = CalculateTileSmoothness(tilePos, distances);
+}

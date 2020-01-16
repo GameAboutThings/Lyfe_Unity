@@ -54,7 +54,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
             InstantiateMap();
         }
 
-        //DrawLinesToChunkCenters();
+        DrawLinesToChunkCenters();
     }
 
     private void InstantiateMap()
@@ -145,7 +145,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
 
 
         if (StaticMaths.WithinBoundingBox(pos2D,
-            StaticMaths.ThreeDTo2D(mapObject.transform.position, StaticMaths.EPlane.E_XZ),
+            StaticMaths.ThreeDTo2D(map.GetActualCenter(), StaticMaths.EPlane.E_XZ),
             new Vector2(chunkTileCountX * TILES.Offset.x, chunkTileCountZ * TILES.Offset.z) + StaticMaths.ThreeDTo2D(TILES.Offset, StaticMaths.EPlane.E_XZ) * 2))
         {
             pos = UTIL.EPosition.ECenter;
@@ -181,7 +181,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
         int halfDim = GetTerrainDimCenter();
 
         if (StaticMaths.WithinBoundingBox(pos2D,
-            StaticMaths.ThreeDTo2D(terrainChunks[halfDim, halfDim].GetCenter(), StaticMaths.EPlane.E_XZ),
+            StaticMaths.ThreeDTo2D(StaticMaths.MultiplyVector3D(terrainChunks[halfDim, halfDim].GetCenter(), TILES.Offset), StaticMaths.EPlane.E_XZ),
             planetData.GetTerrainSize() + StaticMaths.ThreeDTo2D(TILES.Offset, StaticMaths.EPlane.E_XZ) * 2))
         {
             
@@ -435,24 +435,5 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
     private int GetTerrainDimCenter()
     {
         return Mathf.FloorToInt(terrainDimension / 2f);
-    }
-
-    private void LogChunks()
-    {
-        string log = "";
-
-        for (int y = 0; y < terrainDimension; y++)
-        {
-            
-            for (int x = 0; x < terrainDimension; x++)
-            {
-                log += "[";
-                log += terrainChunks[y, x].GetTerrain();
-                log += "]";
-            }
-            log += "\n";
-        }
-
-        Debug.Log(log);
     }
 }
