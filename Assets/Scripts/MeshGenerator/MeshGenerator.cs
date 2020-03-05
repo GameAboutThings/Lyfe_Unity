@@ -120,9 +120,17 @@ public class MeshGenerator
             }
         }
 
+        //generating uv coordiantes
+        Vector2[] uv = new Vector2[vertices.Length];
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            uv[i] = StaticMaths.ThreeDTo2D(vertices[i], StaticMaths.EPlane.E_XZ);
+        }
+
         mesh.vertices = vertices;
         mesh.triangles = meshTriangles;
         mesh.RecalculateNormals();
+        mesh.uv = uv;
     }
 
     void CreateBuffers()

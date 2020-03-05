@@ -11,6 +11,8 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
     GameObject waterLevel;
     [SerializeField]
     GameObject mapPrefab;
+    [SerializeField]
+    bool loadMoreChunks = false;
 
     Seed seed;
 
@@ -129,7 +131,7 @@ public class HexTileMapGenerator_V2 : MonoBehaviour
 
     private void UpdateMap()
     {
-        if (rearrangingBlock)
+        if (rearrangingBlock || !loadMoreChunks)
             return;
 
         Vector3 cameraPos = playerCamera.transform.position;

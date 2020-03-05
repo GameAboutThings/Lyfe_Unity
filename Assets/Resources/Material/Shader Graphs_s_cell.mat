@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: m_tile
-  m_Shader: {fileID: -6465566751694194690, guid: 1b55bc07ae1ce3d489581b06a6702904,
+  m_Name: Shader Graphs_s_cell
+  m_Shader: {fileID: -6465566751694194690, guid: 38d367c4b77e3c5488067233e1418493,
     type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
@@ -19,7 +19,11 @@ Material:
   disabledShaderPasses: []
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - Texture2D_E4AD43:
+        m_Texture: {fileID: 2800000, guid: 9c022dc068fb5564786a2b41e7b6510f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Floats: []
     m_Colors:
-    - Color_8F328A1B: {r: 0.6981132, g: 0.6981132, b: 0.6981132, a: 0}
+    - Color_379C805: {r: 0.1556695, g: 0.7075472, b: 0.09011214, a: 1}

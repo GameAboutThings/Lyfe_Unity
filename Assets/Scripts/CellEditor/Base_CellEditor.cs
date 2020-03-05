@@ -84,7 +84,7 @@ public class Base_CellEditor : MonoBehaviour
         // force update
         meshCollider.enabled = false;
         meshCollider.enabled = true;
-        meshRenderer.material = Resources.Load<Material>("Material/m_testCell");
+        meshRenderer.material = Resources.Load<Material>("Material/Shader Graphs_s_cell");
     }
 
     private void InstantiateNew()
